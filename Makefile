@@ -26,16 +26,16 @@ docker-build: ## Build Docker image
 	docker build -t brronson .
 
 docker-run: ## Run with Docker Compose
-	docker-compose up -d
+	docker compose up -d
 
 docker-stop: ## Stop Docker Compose services
-	docker-compose down
+	docker compose down
 
 docker-logs: ## Show Docker Compose logs
-	docker-compose logs -f
+	docker compose logs -f
 
 docker-clean: ## Clean up Docker resources
-	docker-compose down -v
+	docker compose down -v
 	docker system prune -f
 
 install: ## Install Python dependencies

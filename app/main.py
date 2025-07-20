@@ -1,11 +1,17 @@
+import os
+import platform
+from datetime import datetime, timezone
+
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
+
+from app.version import version
 
 # Create FastAPI app
 app = FastAPI(
     title="Ziggy API",
     description="A FastAPI application with Prometheus metrics",
-    version="0.1.0"
+    version=version
 )
 
 # Initialize and configure Prometheus instrumentator
@@ -23,7 +29,16 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Health check endpoint that returns detailed service status."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "Ziggy API",
+        "version": version,
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "platform": platform.system(),
+        "python_version": platform.python_version()
+    }
 
 # Run the application
 if __name__ == "__main__":
