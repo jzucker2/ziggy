@@ -1,153 +1,164 @@
+import logging
 import os
-import platform
+import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
-from prometheus_fastapi_instrumentator import Instrumentator
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
-from app.logging_config import get_logger, setup_logging
-from app.mqtt_client import cleanup_mqtt_client, initialize_mqtt_client
+from app.logging_config import setup_logging
+from app.mqtt_client import ZiggyMQTTClient
 from app.mqtt_metrics import get_mqtt_metrics
-from app.version import version
+from app.zigbee2mqtt_metrics import get_zigbee2mqtt_metrics
 
-# Setup logging
+# Set up logging
 setup_logging()
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
-# Global MQTT client
-mqtt_client = None
+# Global MQTT client instance
+mqtt_client: ZiggyMQTTClient = None
 
 
-# Create lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Application lifespan manager."""
     # Startup
-    global mqtt_client
     logger.info("Starting Ziggy API application")
 
     # Initialize MQTT client
+    global mqtt_client
     mqtt_client = await initialize_mqtt_client()
-    if mqtt_client:
-        # Add a default message handler for all Zigbee messages
-        mqtt_client.add_message_handler("*", handle_zigbee_message)
-        logger.info("MQTT client initialized and message handler added")
-    else:
-        logger.info(
-            "MQTT client not initialized (disabled or configuration missing)"
-        )
 
-    instrumentator.expose(app)
     logger.info("Prometheus metrics exposed")
     yield
 
     # Shutdown
     logger.info("Shutting down Ziggy API application")
-    await cleanup_mqtt_client()
+    if mqtt_client:
+        await cleanup_mqtt_client()
+
+
+async def initialize_mqtt_client() -> ZiggyMQTTClient:
+    """Initialize and return the MQTT client."""
+    # Check if MQTT is enabled
+    if not os.getenv("MQTT_ENABLED", "false").lower() == "true":
+        logger.info("MQTT is disabled. Set MQTT_ENABLED=true to enable.")
+        return None
+
+    # Check required environment variables
+    if not os.getenv("MQTT_BROKER_HOST"):
+        logger.warning(
+            "MQTT_BROKER_HOST not set. MQTT client will not be initialized."
+        )
+        return None
+
+    try:
+        client = ZiggyMQTTClient()
+        if await client.connect():
+            # Subscribe to topics
+            await client.subscribe(client.topic)
+            await client.subscribe(client.zigbee2mqtt_health_topic)
+            logger.info("MQTT client initialized successfully")
+            return client
+        else:
+            logger.error("Failed to initialize MQTT client")
+            return None
+    except Exception as e:
+        logger.error(f"Error initializing MQTT client: {e}")
+        return None
+
+
+async def cleanup_mqtt_client():
+    """Clean up the MQTT client."""
+    global mqtt_client
+    if mqtt_client:
+        await mqtt_client.disconnect()
+        mqtt_client = None
+        logger.info("MQTT client cleaned up")
 
 
 # Create FastAPI app
 app = FastAPI(
     title="Ziggy API",
-    description="A FastAPI application with Prometheus metrics and MQTT Zigbee integration",
-    version=version,
+    description="A FastAPI application for Zigbee device management with MQTT integration",
+    version="1.0.0",
+    docs_url="/docs",
+    openapi_url="/openapi.json",
     lifespan=lifespan,
 )
 
-# Initialize and configure Prometheus instrumentator
-instrumentator = Instrumentator().instrument(app)
 
-
-# Middleware for request logging
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """Log all incoming requests."""
-    start_time = datetime.now()
-
-    # Log request
-    logger.info(f"Request: {request.method} {request.url.path}")
-
-    # Process request
+    """Log all requests and responses."""
+    start_time = time.time()
     response = await call_next(request)
+    process_time = time.time() - start_time
 
-    # Log response
-    process_time = datetime.now() - start_time
-    logger.info(
-        f"Response: {response.status_code} - {process_time.total_seconds():.3f}s"
-    )
+    logger.info(f"Request: {request.method} {request.url.path}")
+    logger.info(f"Response: {response.status_code} - {process_time:.3f}s")
 
     return response
 
 
-# MQTT message handler
-async def handle_zigbee_message(topic: str, data):
-    """Handle incoming Zigbee messages from MQTT."""
-    logger.info(f"Processing Zigbee message from {topic}: {data}")
-
-    # Here you can add specific logic for handling different types of Zigbee messages
-    # For example, you could:
-    # - Store messages in a database
-    # - Trigger webhooks
-    # - Update device states
-    # - Send notifications
-
-    # For now, we'll just log the message
-    if isinstance(data, dict):
-        # Handle structured data
-        device_id = data.get("device_id", "unknown")
-        state = data.get("state", "unknown")
-        logger.info(f"Device {device_id} state: {state}")
-    else:
-        # Handle raw data
-        logger.info(f"Raw Zigbee data: {data}")
-
-
-# Define routes
 @app.get("/")
 async def root():
-    """Root endpoint that returns a welcome message."""
-    logger.debug("Root endpoint accessed")
-    return {"message": "Welcome to Ziggy API"}
+    """Root endpoint."""
+    return {
+        "message": "Welcome to Ziggy API",
+        "version": "1.0.0",
+        "status": "running",
+    }
 
 
 @app.get("/health")
-async def health_check():
-    """Health check endpoint that returns detailed service status."""
-    logger.debug("Health check endpoint accessed")
-
-    # Get MQTT connection status
-    mqtt_status = "disabled"
-    mqtt_info = {}
-    if mqtt_client:
-        mqtt_status = (
-            "connected" if mqtt_client.is_connected() else "disconnected"
-        )
-        mqtt_info = mqtt_client.get_connection_info()
+async def health():
+    """Health check endpoint."""
+    import platform
+    import sys
 
     return {
         "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "service": "Ziggy API",
-        "version": version,
+        "timestamp": time.time(),
         "environment": os.getenv("ENVIRONMENT", "development"),
-        "platform": platform.system(),
-        "python_version": platform.python_version(),
-        "mqtt": {"status": mqtt_status, "info": mqtt_info},
+        "platform": {
+            "system": platform.system(),
+            "release": platform.release(),
+            "version": platform.version(),
+        },
+        "python": {
+            "version": sys.version,
+            "implementation": platform.python_implementation(),
+        },
+        "mqtt": {
+            "enabled": mqtt_client is not None,
+            "connected": mqtt_client.connected if mqtt_client else False,
+        },
     }
+
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
 
 
 @app.get("/mqtt/status")
 async def mqtt_status():
-    """Get MQTT connection status and configuration."""
+    """Get MQTT connection status."""
     if not mqtt_client:
         return {
             "enabled": False,
-            "message": "MQTT client not initialized. Set MQTT_ENABLED=true to enable.",
+            "message": "MQTT client not initialized (disabled or configuration missing)",
         }
 
     return {
         "enabled": True,
-        "connected": mqtt_client.is_connected(),
+        "connected": mqtt_client.connected,
         "connection_info": mqtt_client.get_connection_info(),
     }
 
@@ -186,21 +197,61 @@ async def mqtt_metrics():
     }
 
 
-@app.post("/mqtt/publish")
-async def publish_message(topic: str, message: str):
-    """Publish a message to an MQTT topic."""
-    if not mqtt_client:
-        return {"error": "MQTT client not initialized"}
+@app.get("/zigbee2mqtt/metrics")
+async def zigbee2mqtt_metrics():
+    """Get Zigbee2MQTT-specific metrics information."""
+    metrics = get_zigbee2mqtt_metrics()
+    if not metrics:
+        return {
+            "enabled": False,
+            "message": "Zigbee2MQTT metrics not available. MQTT client not initialized.",
+        }
 
-    if not mqtt_client.is_connected():
-        return {"error": "MQTT client not connected"}
+    return {
+        "enabled": True,
+        "metrics_info": {
+            "bridge_name": metrics.bridge_name,
+            "available_metrics": [
+                "ziggy_zigbee2mqtt_bridge_health_timestamp",
+                "ziggy_zigbee2mqtt_os_load_average_1m",
+                "ziggy_zigbee2mqtt_os_load_average_5m",
+                "ziggy_zigbee2mqtt_os_load_average_15m",
+                "ziggy_zigbee2mqtt_os_memory_used_mb",
+                "ziggy_zigbee2mqtt_os_memory_percent",
+                "ziggy_zigbee2mqtt_process_uptime_seconds",
+                "ziggy_zigbee2mqtt_process_memory_used_mb",
+                "ziggy_zigbee2mqtt_process_memory_percent",
+                "ziggy_zigbee2mqtt_mqtt_connected",
+                "ziggy_zigbee2mqtt_mqtt_queued_messages",
+                "ziggy_zigbee2mqtt_mqtt_published_messages_total",
+                "ziggy_zigbee2mqtt_mqtt_received_messages_total",
+                "ziggy_zigbee2mqtt_device_leave_count_total",
+                "ziggy_zigbee2mqtt_device_network_address_changes_total",
+                "ziggy_zigbee2mqtt_device_messages_total",
+                "ziggy_zigbee2mqtt_device_messages_per_sec",
+                "ziggy_zigbee2mqtt_bridge_info",
+            ],
+        },
+    }
 
-    success = mqtt_client.publish(topic, message)
-    return {"success": success, "topic": topic, "message": message}
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    """Handle 404 errors."""
+    return JSONResponse(
+        status_code=404,
+        content={"error": "Not found", "path": request.url.path},
+    )
 
 
-# Run the application
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+@app.exception_handler(405)
+async def method_not_allowed_handler(request: Request, exc):
+    """Handle 405 errors."""
+    return JSONResponse(
+        status_code=405,
+        content={
+            "error": "Method not allowed",
+            "method": request.method,
+            "path": request.url.path,
+        },
+    )
