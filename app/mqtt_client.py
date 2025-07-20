@@ -61,12 +61,15 @@ class ZiggyMQTTClient:
         @self.mqtt.on_connect()
         def on_connect(client, flags, rc, properties=None):
             """Handle MQTT connection events."""
+            logger.info(
+                f"🔌 MQTT on_connect event triggered - flags: {flags}, rc: {rc}, properties: {properties}"
+            )
             logger.debug(
                 f"MQTT on_connect event triggered - flags: {flags}, rc: {rc}, properties: {properties}"
             )
 
             if rc == 0:
-                logger.info("Successfully connected to MQTT broker")
+                logger.info("✅ Successfully connected to MQTT broker")
                 logger.debug(
                     f"Connection details - broker: {self.broker_host}:{self.broker_port}, client_id: {self.client_id}"
                 )
@@ -74,16 +77,20 @@ class ZiggyMQTTClient:
                 self.metrics.set_connection_status(True)
 
                 # Re-subscribe to topics when connection is established
+                logger.info(
+                    f"📡 Connection established - re-subscribing to topics: {list(self.subscribed_topics)}"
+                )
                 logger.debug(
                     f"Connection established - re-subscribing to topics: {list(self.subscribed_topics)}"
                 )
                 for topic in self.subscribed_topics:
+                    logger.info(f"📡 Re-subscribing to topic: {topic}")
                     logger.debug(f"Re-subscribing to topic: {topic}")
                     self.mqtt.subscribe(topic)
 
             else:
                 logger.error(
-                    f"Failed to connect to MQTT broker with return code: {rc}"
+                    f"❌ Failed to connect to MQTT broker with return code: {rc}"
                 )
                 logger.debug(
                     f"Connection failure details - broker: {self.broker_host}:{self.broker_port}, client_id: {self.client_id}"
@@ -95,10 +102,13 @@ class ZiggyMQTTClient:
         @self.mqtt.on_disconnect()
         def on_disconnect(client, packet, exc=None):
             """Handle MQTT disconnection events."""
+            logger.info(
+                f"🔌 MQTT on_disconnect event triggered - packet: {packet}, exc: {exc}"
+            )
             logger.debug(
                 f"MQTT on_disconnect event triggered - packet: {packet}, exc: {exc}"
             )
-            logger.info("Disconnected from MQTT broker")
+            logger.info("❌ Disconnected from MQTT broker")
             self.connected = False
             self.metrics.set_connection_status(False)
 
@@ -108,6 +118,9 @@ class ZiggyMQTTClient:
             try:
                 start_time = asyncio.get_event_loop().time()
 
+                logger.info(
+                    f"🎯 MQTT MESSAGE RECEIVED - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
+                )
                 logger.debug(
                     f"MQTT message received - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
                 )
@@ -124,12 +137,18 @@ class ZiggyMQTTClient:
 
                 # Handle Zigbee2MQTT health messages
                 if topic == self.zigbee2mqtt_health_topic:
+                    logger.info(
+                        f"🏥 Processing Zigbee2MQTT health message on topic: {topic}"
+                    )
                     logger.debug(
                         f"Processing Zigbee2MQTT health message on topic: {topic}"
                     )
                     self._handle_zigbee2mqtt_health(payload)
                 else:
                     # Handle general messages
+                    logger.info(
+                        f"📨 Processing general message on topic: {topic}"
+                    )
                     logger.debug(
                         f"Processing general message on topic: {topic}"
                     )
@@ -188,6 +207,9 @@ class ZiggyMQTTClient:
             logger.debug(f"Client info set: {client_info}")
 
             logger.info("Successfully connected to MQTT broker")
+            logger.info(
+                "🔍 FastMQTT will establish connection when FastAPI starts - monitoring for actual connection"
+            )
             return True
 
         except Exception as e:

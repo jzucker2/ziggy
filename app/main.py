@@ -33,8 +33,11 @@ async def lifespan(app: FastAPI):
     # If MQTT client is initialized, integrate it with FastAPI
     if mqtt_client:
         # FastMQTT needs to be integrated with the FastAPI app
+        logger.info("🔌 Integrating FastMQTT with FastAPI application")
         mqtt_client.mqtt.init_app(app)
-        logger.info("FastMQTT integrated with FastAPI application")
+        logger.info("✅ FastMQTT integrated with FastAPI application")
+    else:
+        logger.info("⚠️ MQTT client not initialized - no FastMQTT integration")
 
     logger.info("Prometheus metrics exposed")
     yield
@@ -64,6 +67,7 @@ async def initialize_mqtt_client() -> ZiggyMQTTClient:
 
         # FastMQTT connects automatically when integrated with FastAPI
         # We just need to mark as connected and set up subscriptions
+        logger.info("🔌 Initializing MQTT client with FastMQTT")
         logger.debug("Initializing MQTT client with FastMQTT")
 
         # Mark as connected (FastMQTT will handle actual connection)
@@ -84,6 +88,9 @@ async def initialize_mqtt_client() -> ZiggyMQTTClient:
 
         # Subscribe to Zigbee2MQTT health topic
         # Note: FastMQTT will handle the actual subscription when connected
+        logger.info(
+            f"📡 Setting up subscription for topic: {client.zigbee2mqtt_health_topic}"
+        )
         logger.debug(
             f"Setting up subscription for topic: {client.zigbee2mqtt_health_topic}"
         )
@@ -91,7 +98,7 @@ async def initialize_mqtt_client() -> ZiggyMQTTClient:
         client.subscribed_topics.add(client.zigbee2mqtt_health_topic)
         client.metrics.set_subscriptions_active(len(client.subscribed_topics))
 
-        logger.info("MQTT client initialized successfully")
+        logger.info("✅ MQTT client initialized successfully")
         logger.debug(
             f"MQTT client ready - broker: {client.broker_host}:{client.broker_port}, subscriptions: {list(client.subscribed_topics)}"
         )
