@@ -169,7 +169,8 @@ class ZiggyMQTTClient:
             logger.info(f"Subscribing to topic: {topic}")
             self.metrics.increment_subscription_attempts(topic)
 
-            await self.mqtt.subscribe(topic)
+            # FastMQTT subscribe is not async
+            self.mqtt.subscribe(topic)
             self.subscribed_topics.add(topic)
 
             # Update subscriptions count
@@ -196,7 +197,8 @@ class ZiggyMQTTClient:
                 topic, len(message.encode("utf-8"))
             )
 
-            await self.mqtt.publish(topic, message)
+            # FastMQTT publish is not async
+            self.mqtt.publish(topic, message)
             logger.debug(f"Successfully published message to topic: {topic}")
             return True
 
