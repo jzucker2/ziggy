@@ -84,8 +84,13 @@ class TestHealthEndpoint:
         data = response.json()
 
         expected_keys = {
-            "status", "timestamp", "service", "version",
-            "environment", "platform", "python_version"
+            "status",
+            "timestamp",
+            "service",
+            "version",
+            "environment",
+            "platform",
+            "python_version",
         }
         actual_keys = set(data.keys())
         assert expected_keys == actual_keys
@@ -128,7 +133,9 @@ class TestAppConfiguration:
 
     def test_app_description(self):
         """Test that the app has the correct description."""
-        assert app.description == "A FastAPI application with Prometheus metrics"
+        assert (
+            app.description == "A FastAPI application with Prometheus metrics"
+        )
 
     def test_app_version(self):
         """Test that the app has the correct version."""
