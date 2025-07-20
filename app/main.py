@@ -30,6 +30,12 @@ async def lifespan(app: FastAPI):
     global mqtt_client
     mqtt_client = await initialize_mqtt_client()
 
+    # If MQTT client is initialized, integrate it with FastAPI
+    if mqtt_client:
+        # FastMQTT needs to be integrated with the FastAPI app
+        mqtt_client.mqtt.init_app(app)
+        logger.info("FastMQTT integrated with FastAPI application")
+
     logger.info("Prometheus metrics exposed")
     yield
 
@@ -55,16 +61,47 @@ async def initialize_mqtt_client() -> ZiggyMQTTClient:
 
     try:
         client = ZiggyMQTTClient()
-        if await client.connect():
-            # Subscribe to Zigbee2MQTT health topic
-            await client.subscribe(client.zigbee2mqtt_health_topic)
-            logger.info("MQTT client initialized successfully")
-            return client
-        else:
-            logger.error("Failed to initialize MQTT client")
-            return None
+
+        # FastMQTT connects automatically when integrated with FastAPI
+        # We just need to mark as connected and set up subscriptions
+        logger.debug("Initializing MQTT client with FastMQTT")
+
+        # Mark as connected (FastMQTT will handle actual connection)
+        client.connected = True
+        client.metrics.set_connection_status(True)
+
+        # Set client info
+        client_info = {
+            "connected": "true",
+            "client_id": client.client_id,
+            "broker_host": client.broker_host,
+            "broker_port": str(client.broker_port),
+            "has_credentials": (
+                "true" if client.username and client.password else "false"
+            ),
+        }
+        client.metrics.set_client_info(client_info)
+
+        # Subscribe to Zigbee2MQTT health topic
+        # Note: FastMQTT will handle the actual subscription when connected
+        logger.debug(
+            f"Setting up subscription for topic: {client.zigbee2mqtt_health_topic}"
+        )
+        client.mqtt.subscribe(client.zigbee2mqtt_health_topic)
+        client.subscribed_topics.add(client.zigbee2mqtt_health_topic)
+        client.metrics.set_subscriptions_active(len(client.subscribed_topics))
+
+        logger.info("MQTT client initialized successfully")
+        logger.debug(
+            f"MQTT client ready - broker: {client.broker_host}:{client.broker_port}, subscriptions: {list(client.subscribed_topics)}"
+        )
+        return client
+
     except Exception as e:
         logger.error(f"Error initializing MQTT client: {e}")
+        logger.debug(
+            f"MQTT initialization error details - exception_type: {type(e).__name__}, exception_args: {e.args}"
+        )
         return None
 
 

@@ -72,6 +72,15 @@ class ZiggyMQTTClient:
                 )
                 self.connected = True
                 self.metrics.set_connection_status(True)
+
+                # Re-subscribe to topics when connection is established
+                logger.debug(
+                    f"Connection established - re-subscribing to topics: {list(self.subscribed_topics)}"
+                )
+                for topic in self.subscribed_topics:
+                    logger.debug(f"Re-subscribing to topic: {topic}")
+                    self.mqtt.subscribe(topic)
+
             else:
                 logger.error(
                     f"Failed to connect to MQTT broker with return code: {rc}"
@@ -157,8 +166,8 @@ class ZiggyMQTTClient:
             )
             self.metrics.increment_connection_attempts()
 
-            # FastMQTT doesn't have a connect() method - it connects automatically
-            # when the application starts. We just need to mark as connected.
+            # FastMQTT connects automatically when integrated with FastAPI
+            # We just need to mark as connected and let FastMQTT handle the rest
             logger.debug(
                 "FastMQTT connects automatically - marking as connected"
             )
