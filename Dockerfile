@@ -15,6 +15,9 @@ COPY . .
 # Create logs directory
 RUN mkdir -p logs
 
+# Make startup script executable
+RUN chmod +x /app/start.sh
+
 # Set default logging environment variables
 ENV LOG_LEVEL=INFO
 ENV LOG_FORMAT=default
@@ -31,4 +34,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/start.sh"]
