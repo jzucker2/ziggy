@@ -9,6 +9,8 @@ A FastAPI application with Docker containerization and Prometheus metrics integr
 - Docker containerization with built-in healthcheck
 - Docker Compose setup for easy deployment
 - Comprehensive unit tests
+- Modern FastAPI lifespan event handlers
+- Configurable logging system with environment variables
 
 ## Project Structure
 
@@ -16,11 +18,14 @@ A FastAPI application with Docker containerization and Prometheus metrics integr
 ziggy/
 ├── app/                    # Application code
 │   ├── __init__.py
-│   └── main.py            # FastAPI application
+│   ├── main.py            # FastAPI application
+│   ├── version.py         # Version information
+│   └── logging_config.py  # Logging configuration
 ├── tests/                  # Test files
 │   ├── __init__.py
 │   ├── conftest.py        # Test fixtures
-│   └── test_main.py       # Unit tests
+│   ├── test_main.py       # Unit tests
+│   └── test_logging.py    # Logging tests
 ├── docker-compose.yml      # Docker Compose configuration
 ├── Dockerfile             # Docker configuration with healthcheck
 ├── requirements.txt        # Production dependencies
@@ -31,7 +36,7 @@ ziggy/
 ## Requirements
 
 - Docker and Docker Compose
-- Python 3.11+ (for local development)
+- Python 3.13+ (for local development)
 
 ## Quick Start
 
@@ -74,6 +79,84 @@ ziggy/
 
 3. Access the application at <http://localhost:8000>
 
+## Logging Configuration
+
+The application includes a comprehensive logging system that can be configured using environment variables.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOG_LEVEL` | `INFO` | Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+| `LOG_FORMAT` | `default` | Log format (default, json, simple) |
+| `LOG_HANDLERS` | `console` | Comma-separated list of handlers (console, file, json_console) |
+| `LOG_FILE` | `logs/app.log` | Log file path (when file handler is used) |
+| `LOG_MAX_BYTES` | `10485760` | Max file size in bytes (10MB) |
+| `LOG_BACKUP_COUNT` | `5` | Number of backup files |
+
+### Log Formats
+
+#### Default Format
+
+```
+2024-01-15 10:30:00 - app - INFO - Starting Ziggy API application
+```
+
+#### JSON Format
+
+```json
+{"timestamp": "2024-01-15T10:30:00", "level": "INFO", "logger": "app", "message": "Starting Ziggy API application"}
+```
+
+#### Simple Format
+
+```
+INFO - Starting Ziggy API application
+```
+
+### Usage Examples
+
+#### Console Only (Default)
+
+```bash
+export LOG_LEVEL=DEBUG
+export LOG_HANDLERS=console
+uvicorn app.main:app --reload
+```
+
+#### File Logging
+
+```bash
+export LOG_LEVEL=DEBUG
+export LOG_HANDLERS=console,file
+export LOG_FILE=logs/app.log
+uvicorn app.main:app --reload
+```
+
+#### JSON Logging
+
+```bash
+export LOG_FORMAT=json
+export LOG_HANDLERS=json_console
+uvicorn app.main:app --reload
+```
+
+#### Docker with Custom Logging
+
+```bash
+docker run -e LOG_LEVEL=DEBUG -e LOG_HANDLERS=console,file -e LOG_FILE=/app/logs/app.log ziggy-api
+```
+
+### Log Output
+
+The application logs:
+
+- **Application startup/shutdown** events
+- **HTTP requests** with method, path, and response time
+- **Health check** accesses
+- **Error conditions** and exceptions
+- **Debug information** when LOG_LEVEL=DEBUG
+
 ## Health Check
 
 The application includes a comprehensive health check endpoint at `/health` that provides detailed service information:
@@ -83,10 +166,10 @@ The application includes a comprehensive health check endpoint at `/health` that
   "status": "healthy",
   "timestamp": "2024-01-15T10:30:00.123456+00:00",
   "service": "Ziggy API",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "environment": "development",
   "platform": "Linux",
-  "python_version": "3.11.0"
+  "python_version": "3.13.0"
 }
 ```
 
@@ -123,6 +206,9 @@ pytest -v
 
 # Run only health check tests
 pytest tests/test_main.py::TestHealthEndpoint -v
+
+# Run only logging tests
+pytest tests/test_logging.py -v
 ```
 
 ## API Endpoints
@@ -177,6 +263,16 @@ docker compose up -d --build
 ```bash
 docker ps
 docker inspect <container_id>
+```
+
+### View application logs
+
+```bash
+# View logs from container
+docker compose logs -f app
+
+# View log files (if file logging is enabled)
+docker exec ziggy-api cat logs/app.log
 ```
 
 ## Development
