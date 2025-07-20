@@ -26,6 +26,17 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Ziggy API application")
 
+    # Log the configured log level and other logging settings
+    log_level = os.getenv("LOG_LEVEL", "INFO")
+    log_format = os.getenv("LOG_FORMAT", "default")
+    log_handlers = os.getenv("LOG_HANDLERS", "console")
+    logger.info(f"📊 Log level configured: {log_level}")
+    logger.info(f"📝 Log format: {log_format}")
+    logger.info(f"🖨️ Log handlers: {log_handlers}")
+    logger.debug(f"Log level environment variable: {log_level}")
+    logger.debug(f"Log format environment variable: {log_format}")
+    logger.debug(f"Log handlers environment variable: {log_handlers}")
+
     # Initialize MQTT client
     global mqtt_client
     mqtt_client = await initialize_mqtt_client()
