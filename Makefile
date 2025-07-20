@@ -5,7 +5,7 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 build: ## Build the Docker image
-	docker build -t brronson .
+	docker build -t ziggy .
 
 run: ## Run the application locally
 	uvicorn app.main:app --reload --host 0.0.0.0 --port 1968
