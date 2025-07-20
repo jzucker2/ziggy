@@ -1,0 +1,7 @@
+services:
+  ziggy:
+    build: .
+    container_name: ziggy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
