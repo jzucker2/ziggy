@@ -19,7 +19,7 @@ services:
       - MQTT_BROKER_PORT=${MQTT_BROKER_PORT}
       - MQTT_USERNAME=${MQTT_USERNAME}
       - MQTT_PASSWORD=${MQTT_PASSWORD}
-      - MQTT_ZIGBEE_TOPIC=${MQTT_ZIGBEE_TOPIC}
+      - ZIGBEE2MQTT_HEALTH_TOPIC=${ZIGBEE2MQTT_HEALTH_TOPIC}
       - MQTT_CLIENT_ID=ziggy
     # Uncomment to persist logs
     # volumes:

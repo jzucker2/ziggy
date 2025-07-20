@@ -47,6 +47,20 @@ async def lifespan(app: FastAPI):
         logger.info("🔌 Integrating FastMQTT with FastAPI application")
         mqtt_client.mqtt.init_app(app)
         logger.info("✅ FastMQTT integrated with FastAPI application")
+
+        # Try to explicitly start the FastMQTT client
+        try:
+            logger.info("🔌 Attempting to start FastMQTT client...")
+            # FastMQTT might need explicit startup
+            if hasattr(mqtt_client.mqtt, "mqtt_startup"):
+                await mqtt_client.mqtt.mqtt_startup()
+                logger.info("✅ FastMQTT client started explicitly")
+            else:
+                logger.info(
+                    "⚠️ FastMQTT client doesn't have mqtt_startup method"
+                )
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to explicitly start FastMQTT: {e}")
     else:
         logger.info("⚠️ MQTT client not initialized - no FastMQTT integration")
 
@@ -105,6 +119,7 @@ async def initialize_mqtt_client() -> ZiggyMQTTClient:
             f"Adding subscription for topic: {client.zigbee2mqtt_health_topic}"
         )
         client.subscribed_topics.add(client.zigbee2mqtt_health_topic)
+
         client.metrics.set_subscriptions_active(len(client.subscribed_topics))
 
         logger.info("✅ MQTT client initialized successfully")

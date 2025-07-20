@@ -75,7 +75,6 @@ MQTT_PASSWORD=your_password
 MQTT_CLIENT_ID=ziggy-api
 
 # MQTT Topics
-MQTT_TOPIC=zigbee2mqtt/#
 ZIGBEE2MQTT_HEALTH_TOPIC=zigbee2mqtt/bridge/health
 ```
 

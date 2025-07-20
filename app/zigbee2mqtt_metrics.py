@@ -187,22 +187,22 @@ class Zigbee2MQTTMetrics:
                     1 if mqtt_data["connected"] else 0
                 )
 
-            if "queued" in mqtt_data:
+            if "queued_messages" in mqtt_data:
                 zigbee2mqtt_mqtt_queued_messages.labels(**self.labels).set(
-                    mqtt_data["queued"]
+                    mqtt_data["queued_messages"]
                 )
 
-            if "published" in mqtt_data:
+            if "published_messages_total" in mqtt_data:
                 # For counters, we need to track the difference
-                current_published = mqtt_data["published"]
+                current_published = mqtt_data["published_messages_total"]
                 # Note: This is a simplified approach. In a real implementation,
                 # you might want to track the previous value to calculate the difference
                 zigbee2mqtt_mqtt_published_messages.labels(**self.labels).inc(
                     current_published
                 )
 
-            if "received" in mqtt_data:
-                current_received = mqtt_data["received"]
+            if "received_messages_total" in mqtt_data:
+                current_received = mqtt_data["received_messages_total"]
                 zigbee2mqtt_mqtt_received_messages.labels(**self.labels).inc(
                     current_received
                 )
@@ -210,28 +210,41 @@ class Zigbee2MQTTMetrics:
         # Update device metrics
         if "devices" in health_data:
             devices_data = health_data["devices"]
-            for device_ieee, device_data in devices_data.items():
-                device_labels = {**self.labels, "device_ieee": device_ieee}
 
-                if "leave_count" in device_data:
-                    zigbee2mqtt_device_leave_count.labels(**device_labels).inc(
-                        device_data["leave_count"]
-                    )
+            # Check if devices_data is a dictionary of individual devices or summary data
+            if isinstance(devices_data, dict):
+                # If it's a dictionary, check if it contains individual device data or summary data
+                if "total" in devices_data or "active" in devices_data:
+                    # This is summary data, not individual device data
+                    # Skip individual device processing for summary data
+                    pass
+                else:
+                    # This is individual device data
+                    for device_ieee, device_data in devices_data.items():
+                        device_labels = {
+                            **self.labels,
+                            "device_ieee": device_ieee,
+                        }
 
-                if "network_address_changes" in device_data:
-                    zigbee2mqtt_device_network_address_changes.labels(
-                        **device_labels
-                    ).inc(device_data["network_address_changes"])
+                        if "leave_count" in device_data:
+                            zigbee2mqtt_device_leave_count.labels(
+                                **device_labels
+                            ).inc(device_data["leave_count"])
 
-                if "messages" in device_data:
-                    zigbee2mqtt_device_messages.labels(**device_labels).inc(
-                        device_data["messages"]
-                    )
+                        if "network_address_changes" in device_data:
+                            zigbee2mqtt_device_network_address_changes.labels(
+                                **device_labels
+                            ).inc(device_data["network_address_changes"])
 
-                if "messages_per_sec" in device_data:
-                    zigbee2mqtt_device_messages_per_sec.labels(
-                        **device_labels
-                    ).set(device_data["messages_per_sec"])
+                        if "messages" in device_data:
+                            zigbee2mqtt_device_messages.labels(
+                                **device_labels
+                            ).inc(device_data["messages"])
+
+                        if "messages_per_sec" in device_data:
+                            zigbee2mqtt_device_messages_per_sec.labels(
+                                **device_labels
+                            ).set(device_data["messages_per_sec"])
 
     def set_bridge_info(self, info: Dict[str, Any]):
         """Set bridge information."""

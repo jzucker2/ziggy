@@ -86,7 +86,21 @@ class ZiggyMQTTClient:
                 for topic in self.subscribed_topics:
                     logger.info(f"📡 Re-subscribing to topic: {topic}")
                     logger.debug(f"Re-subscribing to topic: {topic}")
-                    self.mqtt.subscribe(topic)
+                    try:
+                        self.mqtt.subscribe(topic)
+                        logger.info(
+                            f"✅ Successfully subscribed to topic: {topic}"
+                        )
+                        logger.debug(
+                            f"Subscription call completed for topic: {topic}"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"❌ Failed to subscribe to topic {topic}: {e}"
+                        )
+                        logger.debug(
+                            f"Subscription error details - topic: {topic}, exception_type: {type(e).__name__}, exception_args: {e.args}"
+                        )
 
             else:
                 logger.error(
@@ -112,9 +126,14 @@ class ZiggyMQTTClient:
             self.connected = False
             self.metrics.set_connection_status(False)
 
-        @self.mqtt.on_message()
-        def on_message(client, topic, payload, qos, properties):
+        @self.mqtt.subscribe(self.zigbee2mqtt_health_topic)
+        async def on_message(client, topic, payload, qos, properties):
             """Handle incoming MQTT messages."""
+            logger.info(f"🎯 MQTT MESSAGE HANDLER CALLED - topic: {topic}")
+            logger.debug(
+                f"MQTT message handler called - topic: {topic}, payload_size: {len(payload) if payload else 0}"
+            )
+
             try:
                 start_time = asyncio.get_event_loop().time()
 
