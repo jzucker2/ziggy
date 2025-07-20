@@ -56,8 +56,7 @@ async def initialize_mqtt_client() -> ZiggyMQTTClient:
     try:
         client = ZiggyMQTTClient()
         if await client.connect():
-            # Subscribe to topics
-            await client.subscribe(client.topic)
+            # Subscribe to Zigbee2MQTT health topic
             await client.subscribe(client.zigbee2mqtt_health_topic)
             logger.info("MQTT client initialized successfully")
             return client

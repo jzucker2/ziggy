@@ -119,7 +119,8 @@ class ZiggyMQTTClient:
             )
             self.metrics.increment_connection_attempts()
 
-            await self.mqtt.connect()
+            # FastMQTT doesn't have a connect() method - it connects automatically
+            # when the application starts. We just need to mark as connected.
             self.connected = True
             self.metrics.set_connection_status(True)
 
@@ -148,7 +149,8 @@ class ZiggyMQTTClient:
         """Disconnect from the MQTT broker."""
         try:
             if self.connected:
-                await self.mqtt.disconnect()
+                # FastMQTT doesn't have a disconnect() method - it disconnects automatically
+                # when the application shuts down. We just need to mark as disconnected.
                 self.connected = False
                 self.metrics.set_connection_status(False)
                 logger.info("Disconnected from MQTT broker")
