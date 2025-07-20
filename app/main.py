@@ -8,6 +8,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.logging_config import get_logger, setup_logging
 from app.mqtt_client import cleanup_mqtt_client, initialize_mqtt_client
+from app.mqtt_metrics import get_mqtt_metrics
 from app.version import version
 
 # Setup logging
@@ -148,6 +149,40 @@ async def mqtt_status():
         "enabled": True,
         "connected": mqtt_client.is_connected(),
         "connection_info": mqtt_client.get_connection_info(),
+    }
+
+
+@app.get("/mqtt/metrics")
+async def mqtt_metrics():
+    """Get MQTT-specific metrics information."""
+    metrics = get_mqtt_metrics()
+    if not metrics:
+        return {
+            "enabled": False,
+            "message": "MQTT metrics not available. MQTT client not initialized.",
+        }
+
+    return {
+        "enabled": True,
+        "metrics_info": {
+            "broker_host": metrics.broker_host,
+            "broker_port": metrics.broker_port,
+            "client_id": metrics.client_id,
+            "available_metrics": [
+                "ziggy_mqtt_connection_status",
+                "ziggy_mqtt_connection_attempts_total",
+                "ziggy_mqtt_connection_failures_total",
+                "ziggy_mqtt_messages_received_total",
+                "ziggy_mqtt_messages_published_total",
+                "ziggy_mqtt_message_size_bytes",
+                "ziggy_mqtt_message_processing_duration_seconds",
+                "ziggy_mqtt_message_processing_errors_total",
+                "ziggy_mqtt_subscriptions_active",
+                "ziggy_mqtt_subscription_attempts_total",
+                "ziggy_mqtt_subscription_failures_total",
+                "ziggy_mqtt_client_info",
+            ],
+        },
     }
 
 
