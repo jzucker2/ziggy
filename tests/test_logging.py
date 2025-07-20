@@ -161,16 +161,36 @@ class TestLoggingConfig:
 
     def test_logging_config_handler_levels(self):
         """Test that handler levels are properly configured."""
+        # Test with current LOG_LEVEL
+        current_log_level = os.getenv("LOG_LEVEL", "INFO")
         config = get_logging_config()
 
-        # Check console handler
-        assert config["handlers"]["console"]["level"] == "INFO"
+        # Check console handler - should match current LOG_LEVEL
+        assert config["handlers"]["console"]["level"] == current_log_level
         assert config["handlers"]["console"]["formatter"] == "default"
 
-        # Check file handler
-        assert config["handlers"]["file"]["level"] == "DEBUG"
+        # Check file handler - should match current LOG_LEVEL
+        assert config["handlers"]["file"]["level"] == current_log_level
         assert config["handlers"]["file"]["formatter"] == "default"
 
-        # Check JSON console handler
-        assert config["handlers"]["json_console"]["level"] == "INFO"
+        # Check JSON console handler - should match current LOG_LEVEL
+        assert config["handlers"]["json_console"]["level"] == current_log_level
         assert config["handlers"]["json_console"]["formatter"] == "json"
+
+        # Test with INFO LOG_LEVEL (override current)
+        with patch.dict(os.environ, {"LOG_LEVEL": "INFO"}):
+            config = get_logging_config()
+
+            # Check console handler - should match INFO LOG_LEVEL
+            assert config["handlers"]["console"]["level"] == "INFO"
+            assert config["handlers"]["file"]["level"] == "INFO"
+            assert config["handlers"]["json_console"]["level"] == "INFO"
+
+        # Test with DEBUG LOG_LEVEL (override current)
+        with patch.dict(os.environ, {"LOG_LEVEL": "DEBUG"}):
+            config = get_logging_config()
+
+            # Check console handler - should match DEBUG LOG_LEVEL
+            assert config["handlers"]["console"]["level"] == "DEBUG"
+            assert config["handlers"]["file"]["level"] == "DEBUG"
+            assert config["handlers"]["json_console"]["level"] == "DEBUG"

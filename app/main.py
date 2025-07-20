@@ -97,15 +97,13 @@ async def initialize_mqtt_client() -> ZiggyMQTTClient:
         }
         client.metrics.set_client_info(client_info)
 
-        # Subscribe to Zigbee2MQTT health topic
-        # Note: FastMQTT will handle the actual subscription when connected
+        # Add the health topic to subscribed_topics - the on_connect handler will subscribe when connected
         logger.info(
-            f"📡 Setting up subscription for topic: {client.zigbee2mqtt_health_topic}"
+            f"📡 Adding subscription for topic: {client.zigbee2mqtt_health_topic}"
         )
         logger.debug(
-            f"Setting up subscription for topic: {client.zigbee2mqtt_health_topic}"
+            f"Adding subscription for topic: {client.zigbee2mqtt_health_topic}"
         )
-        client.mqtt.subscribe(client.zigbee2mqtt_health_topic)
         client.subscribed_topics.add(client.zigbee2mqtt_health_topic)
         client.metrics.set_subscriptions_active(len(client.subscribed_topics))
 
