@@ -85,27 +85,34 @@ zigbee2mqtt_mqtt_received_messages = Counter(
 )
 
 # Device Metrics
-zigbee2mqtt_device_leave_count = Counter(
-    "ziggy_zigbee2mqtt_device_leave_count_total",
-    "Amount of times the device left the network",
+zigbee2mqtt_device_leave_count = Gauge(
+    "ziggy_zigbee2mqtt_device_leave_count",
+    "Current number of times the device left the network",
     labelnames=["bridge_name", "device_ieee"],
 )
 
-zigbee2mqtt_device_network_address_changes = Counter(
-    "ziggy_zigbee2mqtt_device_network_address_changes_total",
-    "Amount of times the device changed its network address",
+zigbee2mqtt_device_network_address_changes = Gauge(
+    "ziggy_zigbee2mqtt_device_network_address_changes",
+    "Current number of times the device changed its network address",
     labelnames=["bridge_name", "device_ieee"],
 )
 
-zigbee2mqtt_device_messages = Counter(
-    "ziggy_zigbee2mqtt_device_messages_total",
-    "Amount of messages received from the device",
+zigbee2mqtt_device_messages = Gauge(
+    "ziggy_zigbee2mqtt_device_messages",
+    "Current number of messages received from the device",
     labelnames=["bridge_name", "device_ieee"],
 )
 
 zigbee2mqtt_device_messages_per_sec = Gauge(
     "ziggy_zigbee2mqtt_device_messages_per_sec",
-    "Amount of messages received from the device per second",
+    "Current messages per second received from the device",
+    labelnames=["bridge_name", "device_ieee"],
+)
+
+# Device Appearance Counter
+zigbee2mqtt_device_appearances = Counter(
+    "ziggy_zigbee2mqtt_device_appearances_total",
+    "Total number of times a device appeared in health messages",
     labelnames=["bridge_name", "device_ieee"],
 )
 
@@ -229,22 +236,27 @@ class Zigbee2MQTTMetrics:
                         if "leave_count" in device_data:
                             zigbee2mqtt_device_leave_count.labels(
                                 **device_labels
-                            ).inc(device_data["leave_count"])
+                            ).set(device_data["leave_count"])
 
                         if "network_address_changes" in device_data:
                             zigbee2mqtt_device_network_address_changes.labels(
                                 **device_labels
-                            ).inc(device_data["network_address_changes"])
+                            ).set(device_data["network_address_changes"])
 
                         if "messages" in device_data:
                             zigbee2mqtt_device_messages.labels(
                                 **device_labels
-                            ).inc(device_data["messages"])
+                            ).set(device_data["messages"])
 
                         if "messages_per_sec" in device_data:
                             zigbee2mqtt_device_messages_per_sec.labels(
                                 **device_labels
                             ).set(device_data["messages_per_sec"])
+
+                        # Update device appearances counter
+                        zigbee2mqtt_device_appearances.labels(
+                            **device_labels
+                        ).inc()
 
     def set_bridge_info(self, info: Dict[str, Any]):
         """Set bridge information."""
@@ -258,6 +270,11 @@ class Zigbee2MQTTMetrics:
         """Reset metrics for a specific device."""
         device_labels = {**self.labels, "device_ieee": device_ieee}
         zigbee2mqtt_device_messages_per_sec.labels(**device_labels).set(0)
+        zigbee2mqtt_device_messages.labels(**device_labels).set(0)
+        zigbee2mqtt_device_network_address_changes.labels(**device_labels).set(
+            0
+        )
+        zigbee2mqtt_device_leave_count.labels(**device_labels).set(0)
 
 
 # Global metrics instance (will be set by the MQTT client)
