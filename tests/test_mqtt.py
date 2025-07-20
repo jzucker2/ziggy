@@ -48,15 +48,16 @@ class TestZiggyMQTTClient:
 
     def test_mqtt_client_connection_info(self):
         """Test that connection info is returned correctly."""
-        client = ZiggyMQTTClient()
-        info = client.get_connection_info()
+        with patch.dict(os.environ, {}, clear=True):
+            client = ZiggyMQTTClient()
+            info = client.get_connection_info()
 
-        assert info["connected"] is False
-        assert info["broker_host"] == "localhost"
-        assert info["broker_port"] == 1883
-        assert info["client_id"] == "ziggy-api"
-        assert info["subscribed_topics"] == []
-        assert info["has_credentials"] is False
+            assert info["connected"] is False
+            assert info["broker_host"] == "localhost"
+            assert info["broker_port"] == 1883
+            assert info["client_id"] == "ziggy-api"
+            assert info["subscribed_topics"] == []
+            assert info["has_credentials"] is False
 
     def test_mqtt_client_message_handler(self):
         """Test that message handlers are set up correctly."""
