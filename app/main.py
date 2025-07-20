@@ -1,5 +1,6 @@
 import os
 import platform
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
@@ -7,21 +8,26 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.version import version
 
+
+# Create lifespan context manager
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    instrumentator.expose(app)
+    yield
+    # Shutdown (if needed)
+
+
 # Create FastAPI app
 app = FastAPI(
     title="Ziggy API",
     description="A FastAPI application with Prometheus metrics",
     version=version,
+    lifespan=lifespan,
 )
 
 # Initialize and configure Prometheus instrumentator
 instrumentator = Instrumentator().instrument(app)
-
-
-# Register Prometheus metrics endpoint
-@app.on_event("startup")
-async def startup():
-    instrumentator.expose(app)
 
 
 # Define routes

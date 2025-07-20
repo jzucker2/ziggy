@@ -9,6 +9,7 @@ A FastAPI application with Docker containerization and Prometheus metrics integr
 - Docker containerization with built-in healthcheck
 - Docker Compose setup for easy deployment
 - Comprehensive unit tests
+- Modern FastAPI lifespan event handlers
 
 ## Project Structure
 
@@ -16,7 +17,8 @@ A FastAPI application with Docker containerization and Prometheus metrics integr
 ziggy/
 ├── app/                    # Application code
 │   ├── __init__.py
-│   └── main.py            # FastAPI application
+│   ├── main.py            # FastAPI application
+│   └── version.py         # Version information
 ├── tests/                  # Test files
 │   ├── __init__.py
 │   ├── conftest.py        # Test fixtures
@@ -31,7 +33,7 @@ ziggy/
 ## Requirements
 
 - Docker and Docker Compose
-- Python 3.11+ (for local development)
+- Python 3.13+ (for local development)
 
 ## Quick Start
 
@@ -83,10 +85,10 @@ The application includes a comprehensive health check endpoint at `/health` that
   "status": "healthy",
   "timestamp": "2024-01-15T10:30:00.123456+00:00",
   "service": "Ziggy API",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "environment": "development",
   "platform": "Linux",
-  "python_version": "3.11.0"
+  "python_version": "3.13.0"
 }
 ```
 
