@@ -1,10 +1,13 @@
 import json
 import logging
 import os
+import time
 from typing import Any, Dict, Optional
 
 from fastapi_mqtt import FastMQTT, MQTTConfig
 from gmqtt import Client as MQTTClient
+
+from app.mqtt_metrics import MQTTMetrics, set_mqtt_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,12 @@ class ZiggyMQTTClient:
         self.topic = os.getenv("MQTT_ZIGBEE_TOPIC", "zigbee2mqtt/#")
         self.client_id = os.getenv("MQTT_CLIENT_ID", "ziggy-api")
         self.keepalive = int(os.getenv("MQTT_KEEPALIVE", "60"))
+
+        # Initialize metrics
+        self.metrics = MQTTMetrics(
+            self.broker_host, self.broker_port, self.client_id
+        )
+        set_mqtt_metrics(self.metrics)
 
         # Create MQTT config
         mqtt_config = MQTTConfig(
@@ -48,15 +57,31 @@ class ZiggyMQTTClient:
             """Callback for when the client connects to the broker."""
             if rc == 0:
                 self.connected = True
+                self.metrics.set_connection_status(True)
+                self.metrics.set_client_info(
+                    {
+                        "connected": "true",
+                        "client_id": self.client_id,
+                        "broker_host": self.broker_host,
+                        "broker_port": str(self.broker_port),
+                        "has_credentials": str(
+                            bool(self.username and self.password)
+                        ),
+                    }
+                )
                 logger.info(
                     f"Connected to MQTT broker at {self.broker_host}:{self.broker_port}"
                 )
 
                 # Subscribe to the Zigbee topic
                 client.subscribe(self.topic)
+                self.metrics.increment_subscription_attempts(self.topic)
+                self.metrics.set_subscriptions_active(1)
                 logger.info(f"Subscribed to topic: {self.topic}")
             else:
                 self.connected = False
+                self.metrics.set_connection_status(False)
+                self.metrics.increment_connection_failures(f"rc_{rc}")
                 logger.error(
                     f"Failed to connect to MQTT broker. Return code: {rc}"
                 )
@@ -65,7 +90,10 @@ class ZiggyMQTTClient:
         def disconnect(client: MQTTClient, packet, exc=None):
             """Callback for when the client disconnects from the broker."""
             self.connected = False
+            self.metrics.set_connection_status(False)
+            self.metrics.set_subscriptions_active(0)
             if exc:
+                self.metrics.increment_connection_failures("disconnect_error")
                 logger.warning(
                     f"Unexpected disconnection from MQTT broker: {exc}"
                 )
@@ -86,8 +114,15 @@ class ZiggyMQTTClient:
             properties: Any,
         ):
             """Handle incoming Zigbee messages from MQTT."""
+            start_time = time.time()
             try:
                 payload_str = payload.decode("utf-8")
+                payload_size = len(payload)
+
+                # Update metrics
+                self.metrics.increment_messages_received(topic)
+                self.metrics.observe_message_size(topic, payload_size)
+
                 logger.debug(
                     f"Received message on topic {topic}: {payload_str}"
                 )
@@ -107,6 +142,9 @@ class ZiggyMQTTClient:
                     try:
                         await self.message_handlers[topic](topic, data)
                     except Exception as e:
+                        self.metrics.increment_processing_errors(
+                            topic, "handler_error"
+                        )
                         logger.error(
                             f"Error in message handler for topic {topic}: {e}"
                         )
@@ -117,11 +155,23 @@ class ZiggyMQTTClient:
                         try:
                             await wildcard_handler(topic, data)
                         except Exception as e:
+                            self.metrics.increment_processing_errors(
+                                topic, "wildcard_handler_error"
+                            )
                             logger.error(
                                 f"Error in wildcard message handler: {e}"
                             )
 
+                # Record processing duration
+                processing_time = time.time() - start_time
+                self.metrics.observe_processing_duration(
+                    topic, processing_time
+                )
+
             except Exception as e:
+                self.metrics.increment_processing_errors(
+                    topic, "general_error"
+                )
                 logger.error(f"Error processing MQTT message: {e}")
 
     async def connect(self) -> bool:
@@ -130,9 +180,11 @@ class ZiggyMQTTClient:
             logger.info(
                 f"Connecting to MQTT broker at {self.broker_host}:{self.broker_port}"
             )
+            self.metrics.increment_connection_attempts()
             await self.fast_mqtt.mqtt_startup()
             return True
         except Exception as e:
+            self.metrics.increment_connection_failures("connection_exception")
             logger.error(f"Failed to connect to MQTT broker: {e}")
             return False
 
@@ -140,6 +192,7 @@ class ZiggyMQTTClient:
         """Disconnect from the MQTT broker."""
         try:
             await self.fast_mqtt.mqtt_shutdown()
+            self.metrics.reset_connection_status()
             logger.info("Disconnected from MQTT broker")
         except Exception as e:
             logger.error(f"Error disconnecting from MQTT broker: {e}")
@@ -176,9 +229,14 @@ class ZiggyMQTTClient:
         """
         try:
             self.fast_mqtt.publish(topic, payload, qos)
+            self.metrics.increment_messages_published(topic)
+            self.metrics.observe_message_size(
+                topic, len(payload.encode("utf-8"))
+            )
             logger.debug(f"Published message to {topic}: {payload}")
             return True
         except Exception as e:
+            self.metrics.increment_processing_errors(topic, "publish_error")
             logger.error(f"Error publishing message to {topic}: {e}")
             return False
 
