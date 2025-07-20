@@ -23,7 +23,7 @@ clean: ## Clean up generated files
 	rm -rf htmlcov
 
 docker-build: ## Build Docker image
-	docker build -t brronson .
+	docker build -t ziggy .
 
 docker-run: ## Run with Docker Compose
 	docker compose up -d
@@ -45,8 +45,8 @@ install-dev: ## Install development dependencies
 	pip install -r requirements-dev.txt
 
 test-docker: ## Run tests in Docker container
-	docker build -t brronson .
-	docker run --rm brronson pytest
+	docker build -t ziggy .
+	docker run --rm ziggy pytest
 
 format: ## Format code with black
 	black app/ tests/ --line-length=79

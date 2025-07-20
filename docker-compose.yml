@@ -1,5 +1,5 @@
 services:
-  app:
+  ziggy:
     build: .
     container_name: ziggy
     ports:
