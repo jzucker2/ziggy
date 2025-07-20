@@ -76,6 +76,7 @@ MQTT_CLIENT_ID=ziggy-api
 
 # MQTT Topics
 ZIGBEE2MQTT_HEALTH_TOPIC=zigbee2mqtt/bridge/health
+ZIGBEE2MQTT_BRIDGE_NAME=my-bridge
 ```
 
 #### Logging Configuration

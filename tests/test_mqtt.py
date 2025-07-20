@@ -25,7 +25,7 @@ class TestZiggyMQTTClient:
             assert client.subscribed_topics == set()
 
     def test_mqtt_client_with_environment_variables(self):
-        """Test that MQTT client uses environment variables correctly."""
+        """Test MQTT client initialization with environment variables."""
         env_vars = {
             "MQTT_BROKER_HOST": "test-broker.com",
             "MQTT_BROKER_PORT": "8883",
@@ -34,6 +34,7 @@ class TestZiggyMQTTClient:
             "MQTT_CLIENT_ID": "test-client",
             "MQTT_TOPIC": "test/topic/#",
             "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
+            "ZIGBEE2MQTT_BRIDGE_NAME": "test-bridge",
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -45,6 +46,13 @@ class TestZiggyMQTTClient:
             assert client.password == "testpass"
             assert client.client_id == "test-client"
             assert client.zigbee2mqtt_health_topic == "test/health"
+            assert client.zigbee2mqtt_metrics.bridge_name == "test-bridge"
+
+    def test_mqtt_client_default_bridge_name(self):
+        """Test that default bridge name is used when ZIGBEE2MQTT_BRIDGE_NAME is not set."""
+        with patch.dict(os.environ, {}, clear=True):
+            client = ZiggyMQTTClient()
+            assert client.zigbee2mqtt_metrics.bridge_name == "default"
 
     def test_mqtt_client_connection_info(self):
         """Test that connection info is returned correctly."""

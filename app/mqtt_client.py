@@ -35,7 +35,8 @@ class ZiggyMQTTClient:
         set_mqtt_metrics(self.metrics)
 
         # Initialize Zigbee2MQTT metrics
-        self.zigbee2mqtt_metrics = Zigbee2MQTTMetrics()
+        bridge_name = os.getenv("ZIGBEE2MQTT_BRIDGE_NAME", "default")
+        self.zigbee2mqtt_metrics = Zigbee2MQTTMetrics(bridge_name)
         set_zigbee2mqtt_metrics(self.zigbee2mqtt_metrics)
 
         # MQTT Client Configuration

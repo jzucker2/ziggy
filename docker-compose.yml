@@ -20,6 +20,7 @@ services:
       - MQTT_USERNAME=${MQTT_USERNAME}
       - MQTT_PASSWORD=${MQTT_PASSWORD}
       - ZIGBEE2MQTT_HEALTH_TOPIC=${ZIGBEE2MQTT_HEALTH_TOPIC}
+      - ZIGBEE2MQTT_BRIDGE_NAME=${ZIGBEE2MQTT_BRIDGE_NAME}
       - MQTT_CLIENT_ID=ziggy
     # Uncomment to persist logs
     # volumes:
