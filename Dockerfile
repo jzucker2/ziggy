@@ -12,6 +12,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Create logs directory
+RUN mkdir -p logs
+
+# Set default logging environment variables
+ENV LOG_LEVEL=INFO
+ENV LOG_FORMAT=default
+ENV LOG_HANDLERS=console
+ENV LOG_FILE=logs/app.log
+ENV LOG_MAX_BYTES=10485760
+ENV LOG_BACKUP_COUNT=5
+
 # Expose the port the app runs on
 EXPOSE 8000
 
