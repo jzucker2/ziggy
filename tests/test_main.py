@@ -91,9 +91,16 @@ class TestHealthEndpoint:
             "environment",
             "platform",
             "python_version",
+            "mqtt",  # Added MQTT status
         }
         actual_keys = set(data.keys())
         assert expected_keys == actual_keys
+
+        # Test MQTT structure
+        assert "mqtt" in data
+        mqtt_data = data["mqtt"]
+        assert "status" in mqtt_data
+        assert "info" in mqtt_data
 
 
 class TestMetricsEndpoint:
@@ -134,7 +141,8 @@ class TestAppConfiguration:
     def test_app_description(self):
         """Test that the app has the correct description."""
         assert (
-            app.description == "A FastAPI application with Prometheus metrics"
+            app.description
+            == "A FastAPI application with Prometheus metrics and MQTT Zigbee integration"
         )
 
     def test_app_version(self):
