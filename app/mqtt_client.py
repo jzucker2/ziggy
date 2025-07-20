@@ -24,7 +24,6 @@ class ZiggyMQTTClient:
         self.username = os.getenv("MQTT_USERNAME")
         self.password = os.getenv("MQTT_PASSWORD")
         self.client_id = os.getenv("MQTT_CLIENT_ID", "ziggy-api")
-        self.topic = os.getenv("MQTT_TOPIC", "zigbee2mqtt/#")
         self.zigbee2mqtt_health_topic = os.getenv(
             "ZIGBEE2MQTT_HEALTH_TOPIC", "zigbee2mqtt/bridge/health"
         )

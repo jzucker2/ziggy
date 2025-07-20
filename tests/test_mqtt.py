@@ -18,7 +18,6 @@ class TestZiggyMQTTClient:
             assert client.username is None
             assert client.password is None
             assert client.client_id == "ziggy-api"
-            assert client.topic == "zigbee2mqtt/#"
             assert (
                 client.zigbee2mqtt_health_topic == "zigbee2mqtt/bridge/health"
             )
@@ -45,7 +44,6 @@ class TestZiggyMQTTClient:
             assert client.username == "testuser"
             assert client.password == "testpass"
             assert client.client_id == "test-client"
-            assert client.topic == "test/topic/#"
             assert client.zigbee2mqtt_health_topic == "test/health"
 
     def test_mqtt_client_connection_info(self):
