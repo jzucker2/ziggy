@@ -6,7 +6,7 @@ services:
       - "8000:8000"
     environment:
       - ENVIRONMENT=production
-      - LOG_LEVEL=INFO
+      - LOG_LEVEL=${LOG_LEVEL}
       - LOG_FORMAT=default
       - LOG_HANDLERS=console
       - LOG_FILE=logs/app.log
@@ -14,13 +14,13 @@ services:
       - LOG_BACKUP_COUNT=5
       - ACCESS_LOG=true
       # MQTT Configuration
-      - MQTT_ENABLED=false
-      - MQTT_BROKER_HOST=localhost
-      - MQTT_BROKER_PORT=1883
-      - MQTT_USERNAME=
-      - MQTT_PASSWORD=
-      - MQTT_ZIGBEE_TOPIC=zigbee2mqtt/#
-      - MQTT_CLIENT_ID=ziggy-api
+      - MQTT_ENABLED=true
+      - MQTT_BROKER_HOST=${MQTT_BROKER_HOST}
+      - MQTT_BROKER_PORT=${MQTT_BROKER_PORT}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_ZIGBEE_TOPIC=${MQTT_ZIGBEE_TOPIC}
+      - MQTT_CLIENT_ID=ziggy
     # Uncomment to persist logs
     # volumes:
     #   - ./logs:/app/logs
