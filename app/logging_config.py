@@ -112,6 +112,11 @@ def get_logging_config() -> Dict[str, Any]:
         config["loggers"][logger_name]["level"] = log_level
         config["loggers"][logger_name]["handlers"] = log_handlers
 
+    # Update all handler levels to match log level
+    config["handlers"]["console"]["level"] = log_level
+    config["handlers"]["file"]["level"] = log_level
+    config["handlers"]["json_console"]["level"] = log_level
+
     # Update file handler configuration
     if "file" in log_handlers:
         config["handlers"]["file"]["filename"] = log_file
