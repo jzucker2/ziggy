@@ -44,3 +44,4 @@ updates:
       - dependency-name: "fastapi*"
       - dependency-name: "prometheus*"
       - dependency-name: "uvicorn*"
+      - dependency-name: "fastapi-mqtt"
