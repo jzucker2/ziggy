@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
@@ -23,11 +24,9 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-# Global MQTT client instance
-mqtt_client: ZiggyMQTTClient = None
-
-# Global Zigbee2MQTT metrics instance
-zigbee2mqtt_metrics: Zigbee2MQTTMetrics = None
+# Global variables for MQTT client and metrics
+mqtt_client: Optional[ZiggyMQTTClient] = None
+zigbee2mqtt_metrics: Optional[Zigbee2MQTTMetrics] = None
 
 
 @asynccontextmanager
@@ -39,6 +38,19 @@ async def lifespan(app: FastAPI):
     # Initialize MQTT client
     global mqtt_client
     mqtt_client = await initialize_mqtt_client()
+
+    # Initialize FastMQTT with FastAPI app if client is available
+    if mqtt_client and mqtt_client.mqtt:
+        logger.info("🔌 Initializing FastMQTT with FastAPI app")
+        mqtt_client.mqtt.init_app(app)
+
+        # Try to establish connection
+        try:
+            logger.info("🔌 Attempting to connect FastMQTT client")
+            await mqtt_client.mqtt.connection()
+            logger.info("✅ FastMQTT client connected successfully")
+        except Exception as e:
+            logger.error(f"❌ Failed to connect FastMQTT client: {e}")
 
     # Initialize Zigbee2MQTT metrics
     global zigbee2mqtt_metrics
@@ -55,58 +67,32 @@ async def lifespan(app: FastAPI):
         f"📊 Set application info metrics - version: {app_info['version']}"
     )
 
-    # Add the health topic to subscribed_topics
-    logger.info(
-        f"📡 Adding subscription for topic: {mqtt_client.zigbee2mqtt_health_topic}"
-    )
-    logger.debug(
-        f"Adding subscription for topic: {mqtt_client.zigbee2mqtt_health_topic}"
-    )
-    mqtt_client.subscribed_topics.add(mqtt_client.zigbee2mqtt_health_topic)
-
-    # Add the state topic to subscribed_topics
-    logger.info(
-        f"📡 Adding subscription for topic: {mqtt_client.zigbee2mqtt_state_topic}"
-    )
-    logger.debug(
-        f"Adding subscription for topic: {mqtt_client.zigbee2mqtt_state_topic}"
-    )
-    mqtt_client.subscribed_topics.add(mqtt_client.zigbee2mqtt_state_topic)
-
-    # Add the info topic to subscribed_topics
-    logger.info(
-        f"📡 Adding subscription for topic: {mqtt_client.zigbee2mqtt_info_topic}"
-    )
-    logger.debug(
-        f"Adding subscription for topic: {mqtt_client.zigbee2mqtt_info_topic}"
-    )
-    mqtt_client.subscribed_topics.add(mqtt_client.zigbee2mqtt_info_topic)
-
-    mqtt_client.metrics.set_subscriptions_active(
-        len(mqtt_client.subscribed_topics)
-    )
     logger.info("✅ Ziggy application started successfully")
 
     yield
 
     # Shutdown
     logger.info("🛑 Shutting down Ziggy application...")
+
+    # Disconnect MQTT client
     if mqtt_client:
         await mqtt_client.disconnect()
+
     logger.info("✅ Ziggy application shutdown complete")
 
 
 async def initialize_mqtt_client() -> ZiggyMQTTClient:
-    """Initialize and return the MQTT client."""
-    # Check if MQTT is enabled
-    if not os.getenv("MQTT_ENABLED", "false").lower() == "true":
-        logger.info("MQTT is disabled. Set MQTT_ENABLED=true to enable.")
+    """Initialize the MQTT client."""
+    # Check if MQTT is enabled (defaults to true)
+    if os.getenv("MQTT_ENABLED", "true").lower() != "true":
+        logger.info("MQTT client disabled via environment variable")
         return None
 
-    # Check required environment variables
-    if not os.getenv("MQTT_BROKER_HOST"):
-        logger.warning(
-            "MQTT_BROKER_HOST not set. MQTT client will not be initialized."
+    # Check if broker host is configured
+    broker_host = os.getenv("MQTT_BROKER_HOST")
+    if not broker_host:
+        logger.info(
+            "MQTT broker host not configured, skipping MQTT client initialization"
         )
         return None
 
