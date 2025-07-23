@@ -160,9 +160,27 @@ zigbee2mqtt_bridge_info_coordinator = Info(
     labelnames=["bridge_name"],
 )
 
-zigbee2mqtt_bridge_info_config = Info(
-    "ziggy_zigbee2mqtt_bridge_info_config",
-    "Zigbee2MQTT bridge configuration information",
+zigbee2mqtt_bridge_info_network = Info(
+    "ziggy_zigbee2mqtt_bridge_info_network",
+    "Zigbee2MQTT bridge network information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_bridge = Info(
+    "ziggy_zigbee2mqtt_bridge_info_bridge",
+    "Zigbee2MQTT bridge settings information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_os = Info(
+    "ziggy_zigbee2mqtt_bridge_info_os",
+    "Zigbee2MQTT bridge OS information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_mqtt = Info(
+    "ziggy_zigbee2mqtt_bridge_info_mqtt",
+    "Zigbee2MQTT bridge MQTT information",
     labelnames=["bridge_name"],
 )
 
@@ -176,7 +194,15 @@ zigbee2mqtt_bridge_info_timestamp = Gauge(
 BRIDGE_INFO_INCLUDED_FIELDS = {
     "version": ["version", "commit"],
     "coordinator": ["ieee_address", "type"],
-    "config": ["mqtt_server", "mqtt_base_topic", "permit_join", "log_level"],
+    "network": ["channel", "pan_id", "extended_pan_id"],
+    "bridge": [
+        "log_level",
+        "permit_join",
+        "permit_join_end",
+        "restart_required",
+    ],
+    "os": ["version", "node_version", "cpus", "memory_mb"],
+    "mqtt": ["server", "version"],
 }
 
 
@@ -184,7 +210,7 @@ def add_bridge_info_field(category: str, field_name: str):
     """Add a new field to the bridge info metrics configuration.
 
     Args:
-        category: The category of the field ('version', 'coordinator', or 'config')
+        category: The category of the field ('version', 'coordinator', 'network', 'bridge', 'os', or 'mqtt')
         field_name: The name of the field to add
     """
     if category in BRIDGE_INFO_INCLUDED_FIELDS:
@@ -207,7 +233,7 @@ def remove_bridge_info_field(category: str, field_name: str):
     """Remove a field from the bridge info metrics configuration.
 
     Args:
-        category: The category of the field ('version', 'coordinator', or 'config')
+        category: The category of the field ('version', 'coordinator', 'network', 'bridge', 'os', or 'mqtt')
         field_name: The name of the field to remove
     """
     if category in BRIDGE_INFO_INCLUDED_FIELDS:
@@ -413,16 +439,48 @@ class Zigbee2MQTTMetrics:
                     coordinator_info
                 )
 
-        # Update config info - only include specified fields
-        if "config" in info_data:
-            config_data = info_data["config"]
-            config_info = {}
-            for field in BRIDGE_INFO_INCLUDED_FIELDS["config"]:
-                if field in config_data:
-                    config_info[field] = str(config_data[field])
-            if config_info:
-                zigbee2mqtt_bridge_info_config.labels(**self.labels).info(
-                    config_info
+        # Update network info - only include specified fields
+        if "network" in info_data:
+            network_data = info_data["network"]
+            network_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["network"]:
+                if field in network_data:
+                    network_info[field] = str(network_data[field])
+            if network_info:
+                zigbee2mqtt_bridge_info_network.labels(**self.labels).info(
+                    network_info
+                )
+
+        # Update bridge settings info - only include specified fields
+        bridge_info = {}
+        for field in BRIDGE_INFO_INCLUDED_FIELDS["bridge"]:
+            if field in info_data:
+                bridge_info[field] = str(info_data[field])
+        if bridge_info:
+            zigbee2mqtt_bridge_info_bridge.labels(**self.labels).info(
+                bridge_info
+            )
+
+        # Update OS info - only include specified fields
+        if "os" in info_data:
+            os_data = info_data["os"]
+            os_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["os"]:
+                if field in os_data:
+                    os_info[field] = str(os_data[field])
+            if os_info:
+                zigbee2mqtt_bridge_info_os.labels(**self.labels).info(os_info)
+
+        # Update MQTT info - only include specified fields
+        if "mqtt" in info_data:
+            mqtt_data = info_data["mqtt"]
+            mqtt_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["mqtt"]:
+                if field in mqtt_data:
+                    mqtt_info[field] = str(mqtt_data[field])
+            if mqtt_info:
+                zigbee2mqtt_bridge_info_mqtt.labels(**self.labels).info(
+                    mqtt_info
                 )
 
         # Log additional fields for debugging (but don't include in metrics)

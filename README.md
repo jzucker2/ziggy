@@ -168,7 +168,10 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 
 - `ziggy_zigbee2mqtt_bridge_info_version` - Bridge version information (version, commit)
 - `ziggy_zigbee2mqtt_bridge_info_coordinator` - Bridge coordinator information (ieee_address, type)
-- `ziggy_zigbee2mqtt_bridge_info_config` - Bridge configuration information (mqtt_server, mqtt_base_topic, permit_join, log_level)
+- `ziggy_zigbee2mqtt_bridge_info_network` - Bridge network information (channel, pan_id, extended_pan_id)
+- `ziggy_zigbee2mqtt_bridge_info_bridge` - Bridge settings information (log_level, permit_join, permit_join_end, restart_required)
+- `ziggy_zigbee2mqtt_bridge_info_os` - Bridge OS information (version, node_version, cpus, memory_mb)
+- `ziggy_zigbee2mqtt_bridge_info_mqtt` - Bridge MQTT information (server, version)
 - `ziggy_zigbee2mqtt_bridge_info_timestamp` - Last bridge info update timestamp
 
 **Note**: Bridge info metrics are limited to essential fields by default. To add more fields, use the helper functions:
@@ -176,7 +179,7 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 - `add_bridge_info_field(category, field_name)` - Add a new field to metrics
 - `remove_bridge_info_field(category, field_name)` - Remove a field from metrics
 
-Available categories: `version`, `coordinator`, `config`
+Available categories: `version`, `coordinator`, `network`, `bridge`, `os`, `mqtt`
 
 #### OS Metrics
 
