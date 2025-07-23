@@ -128,28 +128,28 @@ health_check:
 
 ## Prometheus Metrics
 
-### MQTT Metrics
+Ziggy exposes comprehensive Prometheus metrics for monitoring Zigbee2MQTT bridge health, state, and information. All metrics are prefixed with `ziggy_` and include detailed labels for filtering and aggregation.
 
-All MQTT metrics are prefixed with `ziggy_mqtt_`:
+### Application Information
 
-#### Connection Metrics
+- **`ziggy_app_info_info`**: Application information including version, platform, Python version, and environment details
+  - Labels: `app_name`, `version`, `name`, `description`, `python_version`, `python_implementation`, `platform_system`, `platform_release`, `platform_version`, `platform_machine`, `platform_processor`, `environment_environment`, `environment_log_level`
 
-- `ziggy_mqtt_connection_status` - Connection status (1=connected, 0=disconnected)
-- `ziggy_mqtt_connection_attempts_total` - Total connection attempts
-- `ziggy_mqtt_connection_failures_total` - Total connection failures
+### Bridge Health Metrics
 
-#### Message Metrics
-
-- `ziggy_mqtt_messages_received_total` - Total messages received
-- `ziggy_mqtt_messages_published_total` - Total messages published
-- `ziggy_mqtt_message_size_bytes` - Message size distribution
-- `ziggy_mqtt_message_processing_duration_seconds` - Message processing time
-
-#### Subscription Metrics
-
-- `ziggy_mqtt_subscriptions_active` - Number of active subscriptions
-- `ziggy_mqtt_subscription_attempts_total` - Total subscription attempts
-- `ziggy_mqtt_subscription_failures_total` - Total subscription failures
+- **`ziggy_zigbee2mqtt_bridge_health_timestamp`**: Last bridge health update timestamp
+- **`ziggy_zigbee2mqtt_os_load_average_1m`**: 1-minute load average
+- **`ziggy_zigbee2mqtt_os_load_average_5m`**: 5-minute load average
+- **`ziggy_zigbee2mqtt_os_load_average_15m`**: 15-minute load average
+- **`ziggy_zigbee2mqtt_os_memory_used_mb`**: Memory usage in MB
+- **`ziggy_zigbee2mqtt_os_memory_percent`**: Memory usage percentage
+- **`ziggy_zigbee2mqtt_process_uptime_seconds`**: Process uptime in seconds
+- **`ziggy_zigbee2mqtt_process_memory_used_mb`**: Process memory usage in MB
+- **`ziggy_zigbee2mqtt_process_memory_percent`**: Process memory usage percentage
+- **`ziggy_zigbee2mqtt_mqtt_connected`**: MQTT connection status (1=connected, 0=disconnected)
+- **`ziggy_zigbee2mqtt_mqtt_queued_messages`**: Number of queued MQTT messages
+- **`ziggy_zigbee2mqtt_mqtt_published_messages_total`**: Total published MQTT messages
+- **`ziggy_zigbee2mqtt_mqtt_received_messages_total`**: Total received MQTT messages
 
 ### Zigbee2MQTT Metrics
 
@@ -168,7 +168,10 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 
 - `ziggy_zigbee2mqtt_bridge_info_version` - Bridge version information (version, commit)
 - `ziggy_zigbee2mqtt_bridge_info_coordinator` - Bridge coordinator information (ieee_address, type)
-- `ziggy_zigbee2mqtt_bridge_info_config` - Bridge configuration information (mqtt_server, mqtt_base_topic, permit_join, log_level)
+- `ziggy_zigbee2mqtt_bridge_info_network` - Bridge network information (channel, pan_id, extended_pan_id)
+- `ziggy_zigbee2mqtt_bridge_info_bridge` - Bridge settings information (log_level, permit_join, permit_join_end, restart_required)
+- `ziggy_zigbee2mqtt_bridge_info_os` - Bridge OS information (version, node_version, cpus, memory_mb)
+- `ziggy_zigbee2mqtt_bridge_info_mqtt` - Bridge MQTT information (server, version)
 - `ziggy_zigbee2mqtt_bridge_info_timestamp` - Last bridge info update timestamp
 
 **Note**: Bridge info metrics are limited to essential fields by default. To add more fields, use the helper functions:
@@ -176,7 +179,7 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 - `add_bridge_info_field(category, field_name)` - Add a new field to metrics
 - `remove_bridge_info_field(category, field_name)` - Remove a field from metrics
 
-Available categories: `version`, `coordinator`, `config`
+Available categories: `version`, `coordinator`, `network`, `bridge`, `os`, `mqtt`
 
 #### OS Metrics
 

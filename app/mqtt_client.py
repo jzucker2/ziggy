@@ -163,9 +163,6 @@ class ZiggyMQTTClient:
             try:
                 start_time = asyncio.get_event_loop().time()
 
-                logger.info(
-                    f"🎯 MQTT HEALTH MESSAGE RECEIVED - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
-                )
                 logger.debug(
                     f"MQTT health message received - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
                 )
@@ -211,9 +208,6 @@ class ZiggyMQTTClient:
         @self.mqtt.subscribe(self.zigbee2mqtt_state_topic)
         async def on_state_message(client, topic, payload, qos, properties):
             """Handle incoming Zigbee2MQTT bridge state messages."""
-            logger.info(
-                f"🎯 MQTT STATE MESSAGE HANDLER CALLED - topic: {topic}"
-            )
             logger.debug(
                 f"MQTT state message handler called - topic: {topic}, payload_size: {len(payload) if payload else 0}"
             )
@@ -221,9 +215,6 @@ class ZiggyMQTTClient:
             try:
                 start_time = asyncio.get_event_loop().time()
 
-                logger.info(
-                    f"🎯 MQTT STATE MESSAGE RECEIVED - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
-                )
                 logger.debug(
                     f"MQTT state message received - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
                 )
@@ -269,7 +260,6 @@ class ZiggyMQTTClient:
         @self.mqtt.subscribe(self.zigbee2mqtt_info_topic)
         async def on_info_message(client, topic, payload, qos, properties):
             """Handle incoming Zigbee2MQTT bridge info messages."""
-            logger.info(f"🎯 MQTT INFO MESSAGE HANDLER CALLED - topic: {topic}")
             logger.debug(
                 f"MQTT info message handler called - topic: {topic}, payload_size: {len(payload) if payload else 0}"
             )
@@ -277,9 +267,6 @@ class ZiggyMQTTClient:
             try:
                 start_time = asyncio.get_event_loop().time()
 
-                logger.info(
-                    f"🎯 MQTT INFO MESSAGE RECEIVED - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
-                )
                 logger.debug(
                     f"MQTT info message received - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
                 )
@@ -294,9 +281,6 @@ class ZiggyMQTTClient:
                 self.metrics.increment_messages_received(topic)
                 self.metrics.observe_message_size(topic, len(payload))
 
-                logger.info(
-                    f"📋 Processing Zigbee2MQTT bridge info message on topic: {topic}"
-                )
                 logger.debug(
                     f"Processing Zigbee2MQTT bridge info message on topic: {topic}"
                 )
@@ -325,7 +309,6 @@ class ZiggyMQTTClient:
         @self.mqtt.subscribe("#")
         async def on_message(client, topic, payload, qos, properties):
             """Handle incoming MQTT messages."""
-            logger.info(f"🎯 MQTT MESSAGE HANDLER CALLED - topic: {topic}")
             logger.debug(
                 f"MQTT message handler called - topic: {topic}, payload_size: {len(payload) if payload else 0}"
             )
@@ -333,9 +316,6 @@ class ZiggyMQTTClient:
             try:
                 start_time = asyncio.get_event_loop().time()
 
-                logger.info(
-                    f"🎯 MQTT MESSAGE RECEIVED - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
-                )
                 logger.debug(
                     f"MQTT message received - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
                 )
@@ -358,34 +338,22 @@ class ZiggyMQTTClient:
 
                 # Handle Zigbee2MQTT health messages
                 if topic == self.zigbee2mqtt_health_topic:
-                    logger.info(
-                        f"🏥 Processing Zigbee2MQTT health message on topic: {topic}"
-                    )
                     logger.debug(
                         f"Processing Zigbee2MQTT health message on topic: {topic}"
                     )
                     self._handle_zigbee2mqtt_health(payload)
                 elif topic == self.zigbee2mqtt_state_topic:
-                    logger.info(
-                        f"🏗️ Processing Zigbee2MQTT bridge state message on topic: {topic}"
-                    )
                     logger.debug(
                         f"Processing Zigbee2MQTT bridge state message on topic: {topic}"
                     )
                     self._handle_zigbee2mqtt_state(payload)
                 elif topic == self.zigbee2mqtt_info_topic:
-                    logger.info(
-                        f"📋 Processing Zigbee2MQTT bridge info message on topic: {topic}"
-                    )
                     logger.debug(
                         f"Processing Zigbee2MQTT bridge info message on topic: {topic}"
                     )
                     self._handle_zigbee2mqtt_info(payload)
                 else:
                     # Handle general messages (but don't track metrics for them)
-                    logger.info(
-                        f"📨 Processing general message on topic: {topic}"
-                    )
                     logger.debug(
                         f"Processing general message on topic: {topic}"
                     )

@@ -2,88 +2,97 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
+from app.app_metrics import get_app_info, update_app_info
 from app.logging_config import setup_logging
 from app.mqtt_client import ZiggyMQTTClient
 from app.mqtt_metrics import get_mqtt_metrics
-from app.zigbee2mqtt_metrics import get_zigbee2mqtt_metrics
+from app.version import __version__
+from app.zigbee2mqtt_metrics import (
+    Zigbee2MQTTMetrics,
+    get_zigbee2mqtt_metrics,
+    set_zigbee2mqtt_metrics,
+)
 
 # Set up logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# Global MQTT client instance
-mqtt_client: ZiggyMQTTClient = None
+
+# Global variables for MQTT client and metrics
+mqtt_client: Optional[ZiggyMQTTClient] = None
+zigbee2mqtt_metrics: Optional[Zigbee2MQTTMetrics] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
-    logger.info("Starting Ziggy API application")
-
-    # Log the configured log level and other logging settings
-    log_level = os.getenv("LOG_LEVEL", "INFO")
-    log_format = os.getenv("LOG_FORMAT", "default")
-    log_handlers = os.getenv("LOG_HANDLERS", "console")
-    logger.info(f"📊 Log level configured: {log_level}")
-    logger.info(f"📝 Log format: {log_format}")
-    logger.info(f"🖨️ Log handlers: {log_handlers}")
-    logger.debug(f"Log level environment variable: {log_level}")
-    logger.debug(f"Log format environment variable: {log_format}")
-    logger.debug(f"Log handlers environment variable: {log_handlers}")
+    logger.info("🚀 Starting Ziggy application...")
 
     # Initialize MQTT client
     global mqtt_client
     mqtt_client = await initialize_mqtt_client()
 
-    # If MQTT client is initialized, integrate it with FastAPI
-    if mqtt_client:
-        # FastMQTT needs to be integrated with the FastAPI app
-        logger.info("🔌 Integrating FastMQTT with FastAPI application")
+    # Initialize FastMQTT with FastAPI app if client is available
+    if mqtt_client and mqtt_client.mqtt:
+        logger.info("🔌 Initializing FastMQTT with FastAPI app")
         mqtt_client.mqtt.init_app(app)
-        logger.info("✅ FastMQTT integrated with FastAPI application")
 
-        # Try to explicitly start the FastMQTT client
+        # Try to establish connection
         try:
-            logger.info("🔌 Attempting to start FastMQTT client...")
-            # FastMQTT might need explicit startup
-            if hasattr(mqtt_client.mqtt, "mqtt_startup"):
-                await mqtt_client.mqtt.mqtt_startup()
-                logger.info("✅ FastMQTT client started explicitly")
-            else:
-                logger.info(
-                    "⚠️ FastMQTT client doesn't have mqtt_startup method"
-                )
+            logger.info("🔌 Attempting to connect FastMQTT client")
+            await mqtt_client.mqtt.connection()
+            logger.info("✅ FastMQTT client connected successfully")
         except Exception as e:
-            logger.warning(f"⚠️ Failed to explicitly start FastMQTT: {e}")
-    else:
-        logger.info("⚠️ MQTT client not initialized - no FastMQTT integration")
+            logger.error(f"❌ Failed to connect FastMQTT client: {e}")
 
-    logger.info("Prometheus metrics exposed")
+    # Initialize Zigbee2MQTT metrics
+    global zigbee2mqtt_metrics
+    zigbee2mqtt_metrics = Zigbee2MQTTMetrics(
+        bridge_name=os.getenv("ZIGBEE2MQTT_BRIDGE_NAME", "navi"),
+        base_topic=os.getenv("ZIGBEE2MQTT_BASE_TOPIC", "zigbee2mqtt"),
+    )
+    set_zigbee2mqtt_metrics(zigbee2mqtt_metrics)
+
+    # Set application info metrics
+    app_info = get_app_info()
+    update_app_info(app_info)
+    logger.info(
+        f"📊 Set application info metrics - version: {app_info['version']}"
+    )
+
+    logger.info("✅ Ziggy application started successfully")
+
     yield
 
     # Shutdown
-    logger.info("Shutting down Ziggy API application")
+    logger.info("🛑 Shutting down Ziggy application...")
+
+    # Disconnect MQTT client
     if mqtt_client:
-        await cleanup_mqtt_client()
+        await mqtt_client.disconnect()
+
+    logger.info("✅ Ziggy application shutdown complete")
 
 
 async def initialize_mqtt_client() -> ZiggyMQTTClient:
-    """Initialize and return the MQTT client."""
-    # Check if MQTT is enabled
-    if not os.getenv("MQTT_ENABLED", "false").lower() == "true":
-        logger.info("MQTT is disabled. Set MQTT_ENABLED=true to enable.")
+    """Initialize the MQTT client."""
+    # Check if MQTT is enabled (defaults to true)
+    if os.getenv("MQTT_ENABLED", "true").lower() != "true":
+        logger.info("MQTT client disabled via environment variable")
         return None
 
-    # Check required environment variables
-    if not os.getenv("MQTT_BROKER_HOST"):
-        logger.warning(
-            "MQTT_BROKER_HOST not set. MQTT client will not be initialized."
+    # Check if broker host is configured
+    broker_host = os.getenv("MQTT_BROKER_HOST")
+    if not broker_host:
+        logger.info(
+            "MQTT broker host not configured, skipping MQTT client initialization"
         )
         return None
 
@@ -167,7 +176,7 @@ async def cleanup_mqtt_client():
 app = FastAPI(
     title="Ziggy API",
     description="A FastAPI application for Zigbee device management with MQTT integration",
-    version="1.0.0",
+    version=__version__,
     docs_url="/docs",
     openapi_url="/openapi.json",
     lifespan=lifespan,
@@ -192,7 +201,7 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Welcome to Ziggy API",
-        "version": "1.0.0",
+        "version": __version__,
         "status": "running",
     }
 
@@ -283,7 +292,7 @@ async def mqtt_metrics():
 
 
 @app.get("/zigbee2mqtt/metrics")
-async def zigbee2mqtt_metrics():
+async def get_zigbee2mqtt_metrics_endpoint():
     """Get Zigbee2MQTT-specific metrics information."""
     metrics = get_zigbee2mqtt_metrics()
     if not metrics:
@@ -312,17 +321,17 @@ async def zigbee2mqtt_metrics():
                 "ziggy_zigbee2mqtt_mqtt_received_messages_total",
                 "ziggy_zigbee2mqtt_device_leave_count",
                 "ziggy_zigbee2mqtt_device_network_address_changes",
-                "ziggy_zigbee2mqtt_device_messages",
-                "ziggy_zigbee2mqtt_device_messages_per_sec",
                 "ziggy_zigbee2mqtt_device_appearances_total",
-                "ziggy_zigbee2mqtt_bridge_info",
-                "ziggy_zigbee2mqtt_base_topic_info",
                 "ziggy_zigbee2mqtt_bridge_state",
                 "ziggy_zigbee2mqtt_bridge_state_timestamp",
                 "ziggy_zigbee2mqtt_bridge_info_version",
                 "ziggy_zigbee2mqtt_bridge_info_coordinator",
-                "ziggy_zigbee2mqtt_bridge_info_config",
+                "ziggy_zigbee2mqtt_bridge_info_network",
+                "ziggy_zigbee2mqtt_bridge_info_bridge",
+                "ziggy_zigbee2mqtt_bridge_info_os",
+                "ziggy_zigbee2mqtt_bridge_info_mqtt",
                 "ziggy_zigbee2mqtt_bridge_info_timestamp",
+                "ziggy_app_info",
             ],
         },
     }
