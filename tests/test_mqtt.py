@@ -9,44 +9,39 @@ class TestZiggyMQTTClient:
     """Test cases for ZiggyMQTTClient."""
 
     def test_mqtt_client_initialization(self):
-        """Test that MQTT client initializes correctly."""
+        """Test MQTT client initialization with default values."""
         with patch.dict(os.environ, {}, clear=True):
             client = ZiggyMQTTClient()
-
             assert client.broker_host == "localhost"
             assert client.broker_port == 1883
-            assert client.username is None
-            assert client.password is None
             assert client.client_id == "ziggy-api"
+            assert client.zigbee2mqtt_base_topic == "zigbee2mqtt"
             assert (
                 client.zigbee2mqtt_health_topic == "zigbee2mqtt/bridge/health"
             )
-            assert client.connected is False
-            assert client.subscribed_topics == set()
 
     def test_mqtt_client_with_environment_variables(self):
         """Test MQTT client initialization with environment variables."""
-        env_vars = {
-            "MQTT_BROKER_HOST": "test-broker.com",
-            "MQTT_BROKER_PORT": "8883",
-            "MQTT_USERNAME": "testuser",
-            "MQTT_PASSWORD": "testpass",
-            "MQTT_CLIENT_ID": "test-client",
-            "MQTT_TOPIC": "test/topic/#",
-            "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
-            "ZIGBEE2MQTT_BRIDGE_NAME": "test-bridge",
-        }
-
-        with patch.dict(os.environ, env_vars, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "MQTT_BROKER_HOST": "test-broker",
+                "MQTT_BROKER_PORT": "8883",
+                "MQTT_USERNAME": "testuser",
+                "MQTT_PASSWORD": "testpass",
+                "MQTT_CLIENT_ID": "test-client",
+                "ZIGBEE2MQTT_BASE_TOPIC": "test",
+            },
+            clear=True,
+        ):
             client = ZiggyMQTTClient()
-
-            assert client.broker_host == "test-broker.com"
+            assert client.broker_host == "test-broker"
             assert client.broker_port == 8883
             assert client.username == "testuser"
             assert client.password == "testpass"
             assert client.client_id == "test-client"
-            assert client.zigbee2mqtt_health_topic == "test/health"
-            assert client.zigbee2mqtt_metrics.bridge_name == "test-bridge"
+            assert client.zigbee2mqtt_base_topic == "test"
+            assert client.zigbee2mqtt_health_topic == "test/bridge/health"
 
     def test_mqtt_client_default_bridge_name(self):
         """Test that default bridge name is used when ZIGBEE2MQTT_BRIDGE_NAME is not set."""

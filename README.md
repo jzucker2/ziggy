@@ -75,7 +75,7 @@ MQTT_PASSWORD=your_password
 MQTT_CLIENT_ID=ziggy-api
 
 # MQTT Topics
-ZIGBEE2MQTT_HEALTH_TOPIC=zigbee2mqtt/bridge/health
+ZIGBEE2MQTT_BASE_TOPIC=zigbee2mqtt
 ZIGBEE2MQTT_BRIDGE_NAME=my-bridge
 ```
 
@@ -106,7 +106,7 @@ mqtt:
 # Enable health monitoring
 health_check:
   enabled: true
-  topic: zigbee2mqtt/bridge/health
+  topic: zigbee2mqtt/bridge/health  # This will be constructed from ZIGBEE2MQTT_BASE_TOPIC + /bridge/health
 ```
 
 ## API Endpoints
@@ -182,10 +182,11 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 
 #### Device Metrics
 
-- `ziggy_zigbee2mqtt_device_leave_count_total` - Device leave events
-- `ziggy_zigbee2mqtt_device_network_address_changes_total` - Network address changes
-- `ziggy_zigbee2mqtt_device_messages_total` - Total device messages
-- `ziggy_zigbee2mqtt_device_messages_per_sec` - Messages per second per device
+- `ziggy_zigbee2mqtt_device_leave_count` - Current device leave events
+- `ziggy_zigbee2mqtt_device_network_address_changes` - Current network address changes
+- `ziggy_zigbee2mqtt_device_messages` - Current device messages
+- `ziggy_zigbee2mqtt_device_messages_per_sec` - Current messages per second per device
+- `ziggy_zigbee2mqtt_device_appearances_total` - Total times device appeared in health messages
 
 ## Docker Deployment
 
