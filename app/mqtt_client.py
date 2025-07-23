@@ -24,8 +24,13 @@ class ZiggyMQTTClient:
         self.username = os.getenv("MQTT_USERNAME")
         self.password = os.getenv("MQTT_PASSWORD")
         self.client_id = os.getenv("MQTT_CLIENT_ID", "ziggy-api")
-        self.zigbee2mqtt_health_topic = os.getenv(
-            "ZIGBEE2MQTT_HEALTH_TOPIC", "zigbee2mqtt/bridge/health"
+
+        # Zigbee2MQTT Configuration
+        self.zigbee2mqtt_base_topic = os.getenv(
+            "ZIGBEE2MQTT_BASE_TOPIC", "zigbee2mqtt"
+        )
+        self.zigbee2mqtt_health_topic = (
+            f"{self.zigbee2mqtt_base_topic}/bridge/health"
         )
 
         # Initialize metrics
@@ -36,8 +41,18 @@ class ZiggyMQTTClient:
 
         # Initialize Zigbee2MQTT metrics
         bridge_name = os.getenv("ZIGBEE2MQTT_BRIDGE_NAME", "default")
-        self.zigbee2mqtt_metrics = Zigbee2MQTTMetrics(bridge_name)
+        self.zigbee2mqtt_metrics = Zigbee2MQTTMetrics(
+            bridge_name, self.zigbee2mqtt_base_topic
+        )
         set_zigbee2mqtt_metrics(self.zigbee2mqtt_metrics)
+
+        # Set base topic info
+        self.zigbee2mqtt_metrics.set_base_topic_info(
+            {
+                "base_topic": self.zigbee2mqtt_base_topic,
+                "health_topic": self.zigbee2mqtt_health_topic,
+            }
+        )
 
         # MQTT Client Configuration
         mqtt_config = MQTTConfig(

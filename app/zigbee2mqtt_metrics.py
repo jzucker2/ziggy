@@ -123,13 +123,23 @@ zigbee2mqtt_bridge_info = Info(
     labelnames=["bridge_name"],
 )
 
+# Base Topic Info
+zigbee2mqtt_base_topic_info = Info(
+    "ziggy_zigbee2mqtt_base_topic",
+    "Zigbee2MQTT base topic information",
+    labelnames=["bridge_name"],
+)
+
 
 class Zigbee2MQTTMetrics:
     """Class to manage Zigbee2MQTT health-related Prometheus metrics."""
 
-    def __init__(self, bridge_name: str = "default"):
+    def __init__(
+        self, bridge_name: str = "default", base_topic: str = "zigbee2mqtt"
+    ):
         """Initialize Zigbee2MQTT metrics with bridge information."""
         self.bridge_name = bridge_name
+        self.base_topic = base_topic
         self.labels = {"bridge_name": bridge_name}
 
     def update_bridge_health(self, health_data: Dict[str, Any]):
@@ -265,6 +275,16 @@ class Zigbee2MQTTMetrics:
             k: v for k, v in info.items() if k not in self.labels
         }
         zigbee2mqtt_bridge_info.labels(**self.labels).info(info_without_labels)
+
+    def set_base_topic_info(self, info: Dict[str, Any]):
+        """Set base topic information."""
+        # Filter out label keys from info to avoid conflicts
+        info_without_labels = {
+            k: v for k, v in info.items() if k not in self.labels
+        }
+        zigbee2mqtt_base_topic_info.labels(**self.labels).info(
+            info_without_labels
+        )
 
     def reset_device_metrics(self, device_ieee: str):
         """Reset metrics for a specific device."""

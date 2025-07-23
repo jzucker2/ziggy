@@ -24,7 +24,7 @@ class TestMQTTInitializationBug:
             "MQTT_BROKER_HOST": "test-broker",
             "MQTT_BROKER_PORT": "1883",
             "MQTT_CLIENT_ID": "test-client",
-            "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
+            "ZIGBEE2MQTT_BASE_TOPIC": "test",
         },
     )
     @patch("app.main.ZiggyMQTTClient")
@@ -39,7 +39,8 @@ class TestMQTTInitializationBug:
         mock_client_class.return_value = mock_client
 
         # Set up mock attributes that the initialization function expects
-        mock_client.zigbee2mqtt_health_topic = "test/health"
+        mock_client.zigbee2mqtt_base_topic = "test"
+        mock_client.zigbee2mqtt_health_topic = "test/bridge/health"
         mock_client.subscribed_topics = set()
         mock_client.mqtt = Mock()
         mock_client.metrics = Mock()
@@ -57,7 +58,7 @@ class TestMQTTInitializationBug:
         assert result == mock_client
 
         # Verify the topic was added to subscribed_topics
-        assert "test/health" in mock_client.subscribed_topics
+        assert "test/bridge/health" in mock_client.subscribed_topics
 
         # Since we're mocking the ZiggyMQTTClient class, the actual client initialization
         # doesn't happen, so subscribe decorators aren't called
@@ -70,7 +71,7 @@ class TestMQTTInitializationBug:
             "MQTT_BROKER_HOST": "test-broker",
             "MQTT_BROKER_PORT": "1883",
             "MQTT_CLIENT_ID": "test-client",
-            "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
+            "ZIGBEE2MQTT_BASE_TOPIC": "test",
         },
     )
     @patch("app.main.ZiggyMQTTClient")
@@ -90,7 +91,8 @@ class TestMQTTInitializationBug:
         mock_client.client_id = "test-client"
         mock_client.username = None
         mock_client.password = None
-        mock_client.zigbee2mqtt_health_topic = "test/health"
+        mock_client.zigbee2mqtt_base_topic = "test"
+        mock_client.zigbee2mqtt_health_topic = "test/bridge/health"
         mock_client.subscribed_topics = set()
         mock_client.metrics = Mock()
         mock_client.mqtt = Mock()
@@ -107,7 +109,7 @@ class TestMQTTInitializationBug:
         mock_client.metrics.set_subscriptions_active.assert_called_with(1)
 
         # Verify the topic was added to subscribed_topics
-        assert "test/health" in mock_client.subscribed_topics
+        assert "test/bridge/health" in mock_client.subscribed_topics
 
         # With FastMQTT, subscribe decorators are called during initialization to register handlers
         # This is expected behavior

@@ -298,6 +298,7 @@ async def zigbee2mqtt_metrics():
                 "ziggy_zigbee2mqtt_device_messages_per_sec",
                 "ziggy_zigbee2mqtt_device_appearances_total",
                 "ziggy_zigbee2mqtt_bridge_info",
+                "ziggy_zigbee2mqtt_base_topic_info",
             ],
         },
     }

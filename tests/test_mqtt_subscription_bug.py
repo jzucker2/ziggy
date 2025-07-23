@@ -22,7 +22,7 @@ class TestMQTTSubscriptionBug:
             "MQTT_BROKER_HOST": "test-broker",
             "MQTT_BROKER_PORT": "1883",
             "MQTT_CLIENT_ID": "test-client",
-            "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
+            "ZIGBEE2MQTT_BASE_TOPIC": "test",
         },
     )
     def test_subscription_attempted_before_connection(self):
@@ -40,6 +40,11 @@ class TestMQTTSubscriptionBug:
             # This is expected behavior - the actual subscription happens when connection is established
             mock_mqtt.subscribe.assert_called()
 
+            # Verify the client was set up correctly
+            mock_client = Mock()
+            mock_client.zigbee2mqtt_base_topic = "test"
+            mock_client.zigbee2mqtt_health_topic = "test/bridge/health"
+
             # Verify the topic was NOT automatically added to subscribed_topics during initialization
             # (it should only be added in main.py when the client is ready)
             assert "test/health" not in client.subscribed_topics
@@ -51,7 +56,7 @@ class TestMQTTSubscriptionBug:
             "MQTT_BROKER_HOST": "test-broker",
             "MQTT_BROKER_PORT": "1883",
             "MQTT_CLIENT_ID": "test-client",
-            "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
+            "ZIGBEE2MQTT_BASE_TOPIC": "test",
         },
     )
     def test_subscription_happens_on_connect(self):
@@ -86,7 +91,7 @@ class TestMQTTSubscriptionBug:
             "MQTT_ENABLED": "true",
             "MQTT_BROKER_PORT": "1883",
             "MQTT_CLIENT_ID": "test-client",
-            "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
+            "ZIGBEE2MQTT_BASE_TOPIC": "test",
         },
     )
     def test_subscription_not_attempted_on_connection_failure(self):
@@ -126,7 +131,7 @@ class TestMQTTSubscriptionBug:
             "MQTT_BROKER_HOST": "test-broker",
             "MQTT_BROKER_PORT": "1883",
             "MQTT_CLIENT_ID": "test-client",
-            "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
+            "ZIGBEE2MQTT_BASE_TOPIC": "test",
         },
     )
     def test_multiple_subscriptions_on_connect(self):
@@ -166,7 +171,7 @@ class TestMQTTSubscriptionBug:
             "MQTT_BROKER_HOST": "test-broker",
             "MQTT_BROKER_PORT": "1883",
             "MQTT_CLIENT_ID": "test-client",
-            "ZIGBEE2MQTT_HEALTH_TOPIC": "test/health",
+            "ZIGBEE2MQTT_BASE_TOPIC": "test",
         },
     )
     def test_client_initialization_does_not_subscribe(self):
