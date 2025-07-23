@@ -347,8 +347,14 @@ class ZiggyMQTTClient:
                     payload_preview += "..."
                 logger.debug(f"Message payload preview: {payload_preview}")
 
-                self.metrics.increment_messages_received(topic)
-                self.metrics.observe_message_size(topic, len(payload))
+                # Only increment metrics for Zigbee2MQTT bridge topics
+                if topic in [
+                    self.zigbee2mqtt_health_topic,
+                    self.zigbee2mqtt_state_topic,
+                    self.zigbee2mqtt_info_topic,
+                ]:
+                    self.metrics.increment_messages_received(topic)
+                    self.metrics.observe_message_size(topic, len(payload))
 
                 # Handle Zigbee2MQTT health messages
                 if topic == self.zigbee2mqtt_health_topic:
@@ -376,7 +382,7 @@ class ZiggyMQTTClient:
                     )
                     self._handle_zigbee2mqtt_info(payload)
                 else:
-                    # Handle general messages
+                    # Handle general messages (but don't track metrics for them)
                     logger.info(
                         f"📨 Processing general message on topic: {topic}"
                     )
@@ -385,14 +391,21 @@ class ZiggyMQTTClient:
                     )
                     self._handle_general_message(topic, payload)
 
-                # Calculate processing duration
-                processing_time = asyncio.get_event_loop().time() - start_time
-                logger.debug(
-                    f"Message processing completed in {processing_time:.4f}s"
-                )
-                self.metrics.observe_processing_duration(
-                    topic, processing_time
-                )
+                # Only track processing duration for Zigbee2MQTT bridge topics
+                if topic in [
+                    self.zigbee2mqtt_health_topic,
+                    self.zigbee2mqtt_state_topic,
+                    self.zigbee2mqtt_info_topic,
+                ]:
+                    processing_time = (
+                        asyncio.get_event_loop().time() - start_time
+                    )
+                    logger.debug(
+                        f"Message processing completed in {processing_time:.4f}s"
+                    )
+                    self.metrics.observe_processing_duration(
+                        topic, processing_time
+                    )
 
             except Exception as e:
                 logger.error(
@@ -401,9 +414,15 @@ class ZiggyMQTTClient:
                 logger.debug(
                     f"Error details - payload_size: {len(payload)}, exception_type: {type(e).__name__}"
                 )
-                self.metrics.increment_processing_errors(
-                    topic, str(type(e).__name__)
-                )
+                # Only track errors for Zigbee2MQTT bridge topics
+                if topic in [
+                    self.zigbee2mqtt_health_topic,
+                    self.zigbee2mqtt_state_topic,
+                    self.zigbee2mqtt_info_topic,
+                ]:
+                    self.metrics.increment_processing_errors(
+                        topic, str(type(e).__name__)
+                    )
 
     async def connect(self) -> bool:
         """Connect to the MQTT broker."""
