@@ -159,6 +159,11 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 
 - `ziggy_zigbee2mqtt_bridge_health_timestamp` - Last health check timestamp
 
+#### Bridge State Metrics
+
+- `ziggy_zigbee2mqtt_bridge_state` - Bridge state information
+- `ziggy_zigbee2mqtt_bridge_state_timestamp` - Last bridge state update timestamp
+
 #### OS Metrics
 
 - `ziggy_zigbee2mqtt_os_load_average_1m` - 1-minute CPU load average

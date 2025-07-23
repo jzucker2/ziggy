@@ -120,6 +120,15 @@ async def initialize_mqtt_client() -> ZiggyMQTTClient:
         )
         client.subscribed_topics.add(client.zigbee2mqtt_health_topic)
 
+        # Add the state topic to subscribed_topics
+        logger.info(
+            f"📡 Adding subscription for topic: {client.zigbee2mqtt_state_topic}"
+        )
+        logger.debug(
+            f"Adding subscription for topic: {client.zigbee2mqtt_state_topic}"
+        )
+        client.subscribed_topics.add(client.zigbee2mqtt_state_topic)
+
         client.metrics.set_subscriptions_active(len(client.subscribed_topics))
 
         logger.info("✅ MQTT client initialized successfully")
@@ -299,6 +308,8 @@ async def zigbee2mqtt_metrics():
                 "ziggy_zigbee2mqtt_device_appearances_total",
                 "ziggy_zigbee2mqtt_bridge_info",
                 "ziggy_zigbee2mqtt_base_topic_info",
+                "ziggy_zigbee2mqtt_bridge_state",
+                "ziggy_zigbee2mqtt_bridge_state_timestamp",
             ],
         },
     }
