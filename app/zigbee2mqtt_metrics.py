@@ -135,9 +135,9 @@ zigbee2mqtt_base_topic_info = Info(
 )
 
 # Bridge State Metrics
-zigbee2mqtt_bridge_state = Info(
+zigbee2mqtt_bridge_state = Gauge(
     "ziggy_zigbee2mqtt_bridge_state",
-    "Zigbee2MQTT bridge state information",
+    "Zigbee2MQTT bridge state (1=online, 0=offline)",
     labelnames=["bridge_name"],
 )
 
@@ -146,6 +146,84 @@ zigbee2mqtt_bridge_state_timestamp = Gauge(
     "Last bridge state update timestamp",
     labelnames=["bridge_name"],
 )
+
+# Bridge Info Metrics
+zigbee2mqtt_bridge_info_version = Info(
+    "ziggy_zigbee2mqtt_bridge_info_version",
+    "Zigbee2MQTT bridge version information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_coordinator = Info(
+    "ziggy_zigbee2mqtt_bridge_info_coordinator",
+    "Zigbee2MQTT bridge coordinator information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_config = Info(
+    "ziggy_zigbee2mqtt_bridge_info_config",
+    "Zigbee2MQTT bridge configuration information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_timestamp = Gauge(
+    "ziggy_zigbee2mqtt_bridge_info_timestamp",
+    "Last bridge info update timestamp",
+    labelnames=["bridge_name"],
+)
+
+# Configuration for which info fields to include in metrics
+BRIDGE_INFO_INCLUDED_FIELDS = {
+    "version": ["version", "commit"],
+    "coordinator": ["ieee_address", "type"],
+    "config": ["mqtt_server", "mqtt_base_topic", "permit_join", "log_level"],
+}
+
+
+def add_bridge_info_field(category: str, field_name: str):
+    """Add a new field to the bridge info metrics configuration.
+
+    Args:
+        category: The category of the field ('version', 'coordinator', or 'config')
+        field_name: The name of the field to add
+    """
+    if category in BRIDGE_INFO_INCLUDED_FIELDS:
+        if field_name not in BRIDGE_INFO_INCLUDED_FIELDS[category]:
+            BRIDGE_INFO_INCLUDED_FIELDS[category].append(field_name)
+            logger.info(
+                f"Added field '{field_name}' to bridge info {category} metrics"
+            )
+        else:
+            logger.debug(
+                f"Field '{field_name}' already exists in {category} metrics"
+            )
+    else:
+        logger.warning(
+            f"Unknown category '{category}' for bridge info metrics"
+        )
+
+
+def remove_bridge_info_field(category: str, field_name: str):
+    """Remove a field from the bridge info metrics configuration.
+
+    Args:
+        category: The category of the field ('version', 'coordinator', or 'config')
+        field_name: The name of the field to remove
+    """
+    if category in BRIDGE_INFO_INCLUDED_FIELDS:
+        if field_name in BRIDGE_INFO_INCLUDED_FIELDS[category]:
+            BRIDGE_INFO_INCLUDED_FIELDS[category].remove(field_name)
+            logger.info(
+                f"Removed field '{field_name}' from bridge info {category} metrics"
+            )
+        else:
+            logger.debug(
+                f"Field '{field_name}' not found in {category} metrics"
+            )
+    else:
+        logger.warning(
+            f"Unknown category '{category}' for bridge info metrics"
+        )
 
 
 class Zigbee2MQTTMetrics:
@@ -293,18 +371,68 @@ class Zigbee2MQTTMetrics:
             current_timestamp
         )
 
-        # Update bridge state info
-        # Filter out label keys from state_data to avoid conflicts
-        state_info_without_labels = {
-            k: v for k, v in state_data.items() if k not in self.labels
-        }
-        zigbee2mqtt_bridge_state.labels(**self.labels).info(
-            state_info_without_labels
+        # Update bridge state (online/offline)
+        if "state" in state_data:
+            state_value = 1 if state_data["state"] == "online" else 0
+            zigbee2mqtt_bridge_state.labels(**self.labels).set(state_value)
+
+            logger.debug(
+                f"Updated bridge state metrics - timestamp: {current_timestamp}, state: {state_data['state']} ({state_value})"
+            )
+        else:
+            logger.warning("Bridge state data missing 'state' field")
+
+    def update_bridge_info(self, info_data: Dict[str, Any]):
+        """Update bridge info metrics from Zigbee2MQTT info data."""
+        # Update timestamp
+        current_timestamp = time.time()
+        zigbee2mqtt_bridge_info_timestamp.labels(**self.labels).set(
+            current_timestamp
         )
 
+        # Update version info - only include specified fields
+        if "version" in info_data:
+            version_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["version"]:
+                if field in info_data:
+                    version_info[field] = str(info_data[field])
+            if version_info:
+                zigbee2mqtt_bridge_info_version.labels(**self.labels).info(
+                    version_info
+                )
+
+        # Update coordinator info - only include specified fields
+        if "coordinator" in info_data:
+            coordinator_data = info_data["coordinator"]
+            coordinator_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["coordinator"]:
+                if field in coordinator_data:
+                    coordinator_info[field] = str(coordinator_data[field])
+            if coordinator_info:
+                zigbee2mqtt_bridge_info_coordinator.labels(**self.labels).info(
+                    coordinator_info
+                )
+
+        # Update config info - only include specified fields
+        if "config" in info_data:
+            config_data = info_data["config"]
+            config_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["config"]:
+                if field in config_data:
+                    config_info[field] = str(config_data[field])
+            if config_info:
+                zigbee2mqtt_bridge_info_config.labels(**self.labels).info(
+                    config_info
+                )
+
+        # Log additional fields for debugging (but don't include in metrics)
         logger.debug(
-            f"Updated bridge state metrics - timestamp: {current_timestamp}, state_keys: {list(state_data.keys())}"
+            f"Updated bridge info metrics - timestamp: {current_timestamp}, info_keys: {list(info_data.keys())}"
         )
+        if "log_level" in info_data:
+            logger.debug(f"Bridge log level: {info_data['log_level']}")
+        if "permit_join" in info_data:
+            logger.debug(f"Bridge permit join: {info_data['permit_join']}")
 
     def set_bridge_info(self, info: Dict[str, Any]):
         """Set bridge information."""

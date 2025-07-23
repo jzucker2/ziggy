@@ -161,8 +161,22 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 
 #### Bridge State Metrics
 
-- `ziggy_zigbee2mqtt_bridge_state` - Bridge state information
+- `ziggy_zigbee2mqtt_bridge_state` - Bridge state (1=online, 0=offline)
 - `ziggy_zigbee2mqtt_bridge_state_timestamp` - Last bridge state update timestamp
+
+#### Bridge Info Metrics
+
+- `ziggy_zigbee2mqtt_bridge_info_version` - Bridge version information (version, commit)
+- `ziggy_zigbee2mqtt_bridge_info_coordinator` - Bridge coordinator information (ieee_address, type)
+- `ziggy_zigbee2mqtt_bridge_info_config` - Bridge configuration information (mqtt_server, mqtt_base_topic, permit_join, log_level)
+- `ziggy_zigbee2mqtt_bridge_info_timestamp` - Last bridge info update timestamp
+
+**Note**: Bridge info metrics are limited to essential fields by default. To add more fields, use the helper functions:
+
+- `add_bridge_info_field(category, field_name)` - Add a new field to metrics
+- `remove_bridge_info_field(category, field_name)` - Remove a field from metrics
+
+Available categories: `version`, `coordinator`, `config`
 
 #### OS Metrics
 
@@ -180,10 +194,20 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 
 #### MQTT Metrics
 
-- `ziggy_zigbee2mqtt_mqtt_connected` - MQTT connection status
-- `ziggy_zigbee2mqtt_mqtt_queued_messages` - Queued messages count
-- `ziggy_zigbee2mqtt_mqtt_published_messages_total` - Total published messages
-- `ziggy_zigbee2mqtt_mqtt_received_messages_total` - Total received messages
+- `ziggy_mqtt_connection_status` - MQTT connection status (1=connected, 0=disconnected)
+- `ziggy_mqtt_connection_attempts_total` - Total number of MQTT connection attempts
+- `ziggy_mqtt_connection_failures_total` - Total number of MQTT connection failures
+- `ziggy_mqtt_messages_received_total` - Total number of MQTT messages received (Zigbee2MQTT bridge topics only)
+- `ziggy_mqtt_messages_published_total` - Total number of MQTT messages published
+- `ziggy_mqtt_message_size_bytes` - Size of MQTT messages in bytes
+- `ziggy_mqtt_processing_duration_seconds` - Time taken to process MQTT messages
+- `ziggy_mqtt_processing_errors_total` - Total number of MQTT message processing errors
+- `ziggy_mqtt_subscriptions_active` - Number of active MQTT subscriptions
+- `ziggy_mqtt_subscription_attempts_total` - Total number of MQTT subscription attempts
+- `ziggy_mqtt_subscription_failures_total` - Total number of MQTT subscription failures
+- `ziggy_mqtt_client_info` - MQTT client information
+
+**Note**: MQTT message metrics are limited to Zigbee2MQTT bridge topics (health, state, info) only. General MQTT messages are processed but not tracked in Prometheus metrics.
 
 #### Device Metrics
 
@@ -317,37 +341,4 @@ scrape_configs:
       - targets: ['localhost:8000']
     metrics_path: '/metrics'
     scrape_interval: 15s
-```
-
-### Grafana Dashboards
-
-Create dashboards for:
-
-- **MQTT Connection Health** - Monitor connection status and message flow
-- **Zigbee2MQTT Bridge Health** - Monitor bridge performance and device activity
-- **System Resources** - Monitor OS and process metrics
-
-### Alerting Rules
-
-Example Prometheus alerting rules:
-
-```yaml
-groups:
-  - name: zigbee2mqtt-alerts
-    rules:
-      - alert: Zigbee2MQTTBridgeDown
-        expr: ziggy_zigbee2mqtt_mqtt_connected == 0
-        for: 2m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Zigbee2MQTT bridge is disconnected"
-
-      - alert: HighMemoryUsage
-        expr: ziggy_zigbee2mqtt_os_memory_percent > 80
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High memory usage detected"
 ```
