@@ -6,6 +6,13 @@ from prometheus_client import Counter, Gauge, Info
 
 logger = logging.getLogger(__name__)
 
+# Application Info Metric
+ziggy_app_info = Info(
+    "ziggy_app_info",
+    "Ziggy application information",
+    labelnames=["app_name"],
+)
+
 # Zigbee2MQTT Bridge Health Metrics
 zigbee2mqtt_bridge_health_timestamp = Gauge(
     "ziggy_zigbee2mqtt_bridge_health_timestamp",
@@ -433,6 +440,25 @@ class Zigbee2MQTTMetrics:
             logger.debug(f"Bridge log level: {info_data['log_level']}")
         if "permit_join" in info_data:
             logger.debug(f"Bridge permit join: {info_data['permit_join']}")
+
+    def update_app_info(self, app_info: Dict[str, Any]):
+        """Update application information metrics."""
+        # Flatten nested data for Prometheus compatibility
+        flattened_info = {}
+        for key, value in app_info.items():
+            if isinstance(value, dict):
+                # Flatten nested dictionaries
+                for nested_key, nested_value in value.items():
+                    flattened_info[f"{key}_{nested_key}"] = str(nested_value)
+            else:
+                flattened_info[key] = str(value)
+
+        # Update the application info metric
+        ziggy_app_info.labels(app_name="ziggy").info(flattened_info)
+
+        logger.debug(
+            f"Updated application info metrics - keys: {list(app_info.keys())}"
+        )
 
     def set_bridge_info(self, info: Dict[str, Any]):
         """Set bridge information."""
