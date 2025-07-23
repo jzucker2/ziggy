@@ -1,15 +1,13 @@
 import logging
 import os
-import platform
-import sys
 import time
 from contextlib import asynccontextmanager
-from typing import Any, Dict
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
+from app.app_metrics import get_app_info, update_app_info
 from app.logging_config import setup_logging
 from app.mqtt_client import ZiggyMQTTClient
 from app.mqtt_metrics import get_mqtt_metrics
@@ -22,33 +20,6 @@ from app.zigbee2mqtt_metrics import (
 # Set up logging
 setup_logging()
 logger = logging.getLogger(__name__)
-
-# Application version and metadata
-APP_VERSION = "1.0.0"
-APP_NAME = "Ziggy"
-APP_DESCRIPTION = "Zigbee2MQTT Prometheus Metrics Exporter"
-
-
-def get_app_info() -> Dict[str, Any]:
-    """Collect application information for metrics."""
-    return {
-        "version": APP_VERSION,
-        "name": APP_NAME,
-        "description": APP_DESCRIPTION,
-        "python_version": sys.version,
-        "python_implementation": platform.python_implementation(),
-        "platform": {
-            "system": platform.system(),
-            "release": platform.release(),
-            "version": platform.version(),
-            "machine": platform.machine(),
-            "processor": platform.processor(),
-        },
-        "environment": {
-            "environment": os.getenv("ENVIRONMENT", "development"),
-            "log_level": os.getenv("LOG_LEVEL", "info"),
-        },
-    }
 
 
 # Global MQTT client instance
@@ -78,8 +49,10 @@ async def lifespan(app: FastAPI):
 
     # Set application info metrics
     app_info = get_app_info()
-    zigbee2mqtt_metrics.update_app_info(app_info)
-    logger.info(f"📊 Set application info metrics - version: {APP_VERSION}")
+    update_app_info(app_info)
+    logger.info(
+        f"📊 Set application info metrics - version: {app_info['version']}"
+    )
 
     # Add the health topic to subscribed_topics
     logger.info(
