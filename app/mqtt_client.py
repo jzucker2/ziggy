@@ -35,6 +35,9 @@ class ZiggyMQTTClient:
         self.zigbee2mqtt_state_topic = (
             f"{self.zigbee2mqtt_base_topic}/bridge/state"
         )
+        self.zigbee2mqtt_info_topic = (
+            f"{self.zigbee2mqtt_base_topic}/bridge/info"
+        )
 
         # Initialize metrics
         self.metrics = MQTTMetrics(
@@ -55,6 +58,7 @@ class ZiggyMQTTClient:
                 "base_topic": self.zigbee2mqtt_base_topic,
                 "health_topic": self.zigbee2mqtt_health_topic,
                 "state_topic": self.zigbee2mqtt_state_topic,
+                "info_topic": self.zigbee2mqtt_info_topic,
             }
         )
 
@@ -262,6 +266,62 @@ class ZiggyMQTTClient:
                     topic, str(type(e).__name__)
                 )
 
+        @self.mqtt.subscribe(self.zigbee2mqtt_info_topic)
+        async def on_info_message(client, topic, payload, qos, properties):
+            """Handle incoming Zigbee2MQTT bridge info messages."""
+            logger.info(f"🎯 MQTT INFO MESSAGE HANDLER CALLED - topic: {topic}")
+            logger.debug(
+                f"MQTT info message handler called - topic: {topic}, payload_size: {len(payload) if payload else 0}"
+            )
+
+            try:
+                start_time = asyncio.get_event_loop().time()
+
+                logger.info(
+                    f"🎯 MQTT INFO MESSAGE RECEIVED - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
+                )
+                logger.debug(
+                    f"MQTT info message received - topic: {topic}, qos: {qos}, payload_size: {len(payload)} bytes"
+                )
+                logger.debug(f"Message properties: {properties}")
+
+                # Log payload preview (first 200 chars for safety)
+                payload_preview = str(payload)[:200]
+                if len(str(payload)) > 200:
+                    payload_preview += "..."
+                logger.debug(f"Message payload preview: {payload_preview}")
+
+                self.metrics.increment_messages_received(topic)
+                self.metrics.observe_message_size(topic, len(payload))
+
+                logger.info(
+                    f"📋 Processing Zigbee2MQTT bridge info message on topic: {topic}"
+                )
+                logger.debug(
+                    f"Processing Zigbee2MQTT bridge info message on topic: {topic}"
+                )
+                self._handle_zigbee2mqtt_info(payload)
+
+                # Calculate processing duration
+                processing_time = asyncio.get_event_loop().time() - start_time
+                logger.debug(
+                    f"Info message processing completed in {processing_time:.4f}s"
+                )
+                self.metrics.observe_processing_duration(
+                    topic, processing_time
+                )
+
+            except Exception as e:
+                logger.error(
+                    f"Error processing info message from topic {topic}: {e}"
+                )
+                logger.debug(
+                    f"Error details - payload_size: {len(payload)}, exception_type: {type(e).__name__}"
+                )
+                self.metrics.increment_processing_errors(
+                    topic, str(type(e).__name__)
+                )
+
         @self.mqtt.subscribe("#")
         async def on_message(client, topic, payload, qos, properties):
             """Handle incoming MQTT messages."""
@@ -307,6 +367,14 @@ class ZiggyMQTTClient:
                         f"Processing Zigbee2MQTT bridge state message on topic: {topic}"
                     )
                     self._handle_zigbee2mqtt_state(payload)
+                elif topic == self.zigbee2mqtt_info_topic:
+                    logger.info(
+                        f"📋 Processing Zigbee2MQTT bridge info message on topic: {topic}"
+                    )
+                    logger.debug(
+                        f"Processing Zigbee2MQTT bridge info message on topic: {topic}"
+                    )
+                    self._handle_zigbee2mqtt_info(payload)
                 else:
                     # Handle general messages
                     logger.info(
@@ -588,6 +656,57 @@ class ZiggyMQTTClient:
             )
             self.metrics.increment_processing_errors(
                 self.zigbee2mqtt_state_topic, "handler_error"
+            )
+
+    def _handle_zigbee2mqtt_info(self, payload):
+        """Handle Zigbee2MQTT bridge info messages."""
+        try:
+            logger.debug(
+                f"Processing Zigbee2MQTT bridge info message - payload_size: {len(payload)} bytes"
+            )
+
+            # Decode payload
+            if isinstance(payload, bytes):
+                payload_str = payload.decode("utf-8")
+                logger.debug("Payload was bytes, decoded to string")
+            else:
+                payload_str = str(payload)
+                logger.debug("Payload was already string")
+
+            # Log payload preview
+            payload_preview = payload_str[:200]
+            if len(payload_str) > 200:
+                payload_preview += "..."
+            logger.debug(f"Info payload preview: {payload_preview}")
+
+            # Parse JSON
+            logger.debug("Parsing info data as JSON")
+            info_data = json.loads(payload_str)
+            logger.debug(
+                f"Info data parsed successfully - keys: {list(info_data.keys())}"
+            )
+
+            # Update Zigbee2MQTT metrics
+            logger.debug("Updating Zigbee2MQTT info metrics")
+            self.zigbee2mqtt_metrics.update_bridge_info(info_data)
+
+            logger.debug("Updated Zigbee2MQTT info metrics successfully")
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse Zigbee2MQTT info data as JSON: {e}")
+            logger.debug(
+                f"JSON parse error details - error_position: {e.pos}, error_line: {e.lineno}, error_column: {e.colno}"
+            )
+            self.metrics.increment_processing_errors(
+                self.zigbee2mqtt_info_topic, "json_parse_error"
+            )
+        except Exception as e:
+            logger.error(f"Error handling Zigbee2MQTT info message: {e}")
+            logger.debug(
+                f"Info message error details - exception_type: {type(e).__name__}, exception_args: {e.args}"
+            )
+            self.metrics.increment_processing_errors(
+                self.zigbee2mqtt_info_topic, "handler_error"
             )
 
     def _handle_general_message(self, topic: str, payload):

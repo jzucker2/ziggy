@@ -189,21 +189,28 @@ class TestZigbee2MQTTMetrics:
         """Test updating bridge state metrics."""
         metrics = Zigbee2MQTTMetrics("test-bridge", "test-topic")
 
-        # Mock state data
-        state_data = {
-            "version": "1.13.0-dev",
-            "commit": "772f6c0",
-            "coordinator": {"ieee_address": "0x12345678", "type": "zStack30x"},
-            "network": {"channel": 15, "pan_id": 5674},
-            "log_level": "debug",
-            "permit_join": True,
-        }
+        # Mock state data with correct format
+        state_data = {"state": "online"}
 
         # Update bridge state
         metrics.update_bridge_state(state_data)
 
         # Verify the metrics were updated (we can't easily test Info metrics directly)
         # but we can verify the method doesn't raise exceptions
+        assert metrics.bridge_name == "test-bridge"
+        assert metrics.base_topic == "test-topic"
+
+    def test_update_bridge_state_offline(self):
+        """Test updating bridge state metrics with offline state."""
+        metrics = Zigbee2MQTTMetrics("test-bridge", "test-topic")
+
+        # Mock state data with offline state
+        state_data = {"state": "offline"}
+
+        # Update bridge state
+        metrics.update_bridge_state(state_data)
+
+        # Verify the method handles offline state gracefully
         assert metrics.bridge_name == "test-bridge"
         assert metrics.base_topic == "test-topic"
 
@@ -219,14 +226,35 @@ class TestZigbee2MQTTMetrics:
         assert metrics.bridge_name == "test-bridge"
         assert metrics.base_topic == "test-topic"
 
-    def test_update_bridge_state_partial_data(self):
-        """Test updating bridge state metrics with partial data."""
+    def test_update_bridge_info(self):
+        """Test updating bridge info metrics."""
         metrics = Zigbee2MQTTMetrics("test-bridge", "test-topic")
 
-        # Update with partial state data
-        state_data = {"version": "1.13.0-dev", "permit_join": False}
+        # Mock info data
+        info_data = {
+            "version": "1.13.0-dev",
+            "commit": "772f6c0",
+            "coordinator": {"ieee_address": "0x12345678", "type": "zStack30x"},
+            "log_level": "debug",
+            "permit_join": True,
+            "config": {"mqtt": {"server": "mqtt://localhost:1883"}},
+        }
 
-        metrics.update_bridge_state(state_data)
+        # Update bridge info
+        metrics.update_bridge_info(info_data)
+
+        # Verify the method doesn't raise exceptions
+        assert metrics.bridge_name == "test-bridge"
+        assert metrics.base_topic == "test-topic"
+
+    def test_update_bridge_info_partial_data(self):
+        """Test updating bridge info metrics with partial data."""
+        metrics = Zigbee2MQTTMetrics("test-bridge", "test-topic")
+
+        # Update with partial info data
+        info_data = {"version": "1.13.0-dev", "log_level": "info"}
+
+        metrics.update_bridge_info(info_data)
 
         # Verify the method handles partial data gracefully
         assert metrics.bridge_name == "test-bridge"

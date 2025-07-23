@@ -135,15 +135,40 @@ zigbee2mqtt_base_topic_info = Info(
 )
 
 # Bridge State Metrics
-zigbee2mqtt_bridge_state = Info(
+zigbee2mqtt_bridge_state = Gauge(
     "ziggy_zigbee2mqtt_bridge_state",
-    "Zigbee2MQTT bridge state information",
+    "Zigbee2MQTT bridge state (1=online, 0=offline)",
     labelnames=["bridge_name"],
 )
 
 zigbee2mqtt_bridge_state_timestamp = Gauge(
     "ziggy_zigbee2mqtt_bridge_state_timestamp",
     "Last bridge state update timestamp",
+    labelnames=["bridge_name"],
+)
+
+# Bridge Info Metrics
+zigbee2mqtt_bridge_info_version = Info(
+    "ziggy_zigbee2mqtt_bridge_info_version",
+    "Zigbee2MQTT bridge version information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_coordinator = Info(
+    "ziggy_zigbee2mqtt_bridge_info_coordinator",
+    "Zigbee2MQTT bridge coordinator information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_config = Info(
+    "ziggy_zigbee2mqtt_bridge_info_config",
+    "Zigbee2MQTT bridge configuration information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_info_timestamp = Gauge(
+    "ziggy_zigbee2mqtt_bridge_info_timestamp",
+    "Last bridge info update timestamp",
     labelnames=["bridge_name"],
 )
 
@@ -293,17 +318,81 @@ class Zigbee2MQTTMetrics:
             current_timestamp
         )
 
-        # Update bridge state info
-        # Filter out label keys from state_data to avoid conflicts
-        state_info_without_labels = {
-            k: v for k, v in state_data.items() if k not in self.labels
-        }
-        zigbee2mqtt_bridge_state.labels(**self.labels).info(
-            state_info_without_labels
+        # Update bridge state (online/offline)
+        if "state" in state_data:
+            state_value = 1 if state_data["state"] == "online" else 0
+            zigbee2mqtt_bridge_state.labels(**self.labels).set(state_value)
+
+            logger.debug(
+                f"Updated bridge state metrics - timestamp: {current_timestamp}, state: {state_data['state']} ({state_value})"
+            )
+        else:
+            logger.warning("Bridge state data missing 'state' field")
+
+    def update_bridge_info(self, info_data: Dict[str, Any]):
+        """Update bridge info metrics from Zigbee2MQTT info data."""
+        # Update timestamp
+        current_timestamp = time.time()
+        zigbee2mqtt_bridge_info_timestamp.labels(**self.labels).set(
+            current_timestamp
         )
 
+        # Update version info
+        if "version" in info_data:
+            version_info = {"version": info_data["version"]}
+            if "commit" in info_data:
+                version_info["commit"] = info_data["commit"]
+            zigbee2mqtt_bridge_info_version.labels(**self.labels).info(
+                version_info
+            )
+
+        # Update coordinator info - flatten nested data
+        if "coordinator" in info_data:
+            coordinator_data = info_data["coordinator"]
+            # Flatten nested coordinator data for Prometheus compatibility
+            flattened_coordinator = {}
+            for key, value in coordinator_data.items():
+                if isinstance(value, dict):
+                    # Flatten nested dictionaries
+                    for nested_key, nested_value in value.items():
+                        flattened_coordinator[f"{key}_{nested_key}"] = str(
+                            nested_value
+                        )
+                else:
+                    flattened_coordinator[key] = str(value)
+            zigbee2mqtt_bridge_info_coordinator.labels(**self.labels).info(
+                flattened_coordinator
+            )
+
+        # Update config info - flatten nested data
+        if "config" in info_data:
+            config_data = info_data["config"]
+            # Flatten nested config data for Prometheus compatibility
+            flattened_config = {}
+            for key, value in config_data.items():
+                if isinstance(value, dict):
+                    # Flatten nested dictionaries
+                    for nested_key, nested_value in value.items():
+                        flattened_config[f"{key}_{nested_key}"] = str(
+                            nested_value
+                        )
+                else:
+                    flattened_config[key] = str(value)
+            zigbee2mqtt_bridge_info_config.labels(**self.labels).info(
+                flattened_config
+            )
+
+        # Update log level and permit join as individual metrics
+        if "log_level" in info_data:
+            # We could add individual gauges for these if needed
+            logger.debug(f"Bridge log level: {info_data['log_level']}")
+
+        if "permit_join" in info_data:
+            # We could add individual gauges for these if needed
+            logger.debug(f"Bridge permit join: {info_data['permit_join']}")
+
         logger.debug(
-            f"Updated bridge state metrics - timestamp: {current_timestamp}, state_keys: {list(state_data.keys())}"
+            f"Updated bridge info metrics - timestamp: {current_timestamp}, info_keys: {list(info_data.keys())}"
         )
 
     def set_bridge_info(self, info: Dict[str, Any]):

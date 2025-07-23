@@ -161,8 +161,15 @@ All Zigbee2MQTT metrics are prefixed with `ziggy_zigbee2mqtt_`:
 
 #### Bridge State Metrics
 
-- `ziggy_zigbee2mqtt_bridge_state` - Bridge state information
+- `ziggy_zigbee2mqtt_bridge_state` - Bridge state (1=online, 0=offline)
 - `ziggy_zigbee2mqtt_bridge_state_timestamp` - Last bridge state update timestamp
+
+#### Bridge Info Metrics
+
+- `ziggy_zigbee2mqtt_bridge_info_version` - Bridge version information
+- `ziggy_zigbee2mqtt_bridge_info_coordinator` - Bridge coordinator information
+- `ziggy_zigbee2mqtt_bridge_info_config` - Bridge configuration information
+- `ziggy_zigbee2mqtt_bridge_info_timestamp` - Last bridge info update timestamp
 
 #### OS Metrics
 
