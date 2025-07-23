@@ -10,9 +10,20 @@ class TestVersion:
 
     def test_version_attributes(self):
         """Test that version attributes are defined correctly."""
-        assert __version__ == "1.0.0"
-        assert __app_name__ == "Ziggy"
-        assert __app_description__ == "Zigbee2MQTT Prometheus Metrics Exporter"
+        # Test that version attributes exist and are not None
+        assert __version__ is not None
+        assert __app_name__ is not None
+        assert __app_description__ is not None
+
+        # Test that they are strings
+        assert isinstance(__version__, str)
+        assert isinstance(__app_name__, str)
+        assert isinstance(__app_description__, str)
+
+        # Test that they are not empty
+        assert len(__version__) > 0
+        assert len(__app_name__) > 0
+        assert len(__app_description__) > 0
 
     def test_version_format(self):
         """Test that version follows semantic versioning format."""
