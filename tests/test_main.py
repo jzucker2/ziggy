@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.version import __version__
 
 client = TestClient(app)
 
@@ -15,7 +16,7 @@ class TestRootEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["message"] == "Welcome to Ziggy API"
-        assert data["version"] == "1.0.0"
+        assert data["version"] == __version__
         assert data["status"] == "running"
 
     def test_root_endpoint_content_type(self):
@@ -135,7 +136,7 @@ class TestAppConfiguration:
 
     def test_app_version(self):
         """Test that the app has the correct version."""
-        assert app.version == "1.0.0"
+        assert app.version == __version__
 
     def test_app_docs_endpoint(self):
         """Test that the docs endpoint is accessible."""

@@ -11,6 +11,7 @@ from app.app_metrics import get_app_info, update_app_info
 from app.logging_config import setup_logging
 from app.mqtt_client import ZiggyMQTTClient
 from app.mqtt_metrics import get_mqtt_metrics
+from app.version import __version__
 from app.zigbee2mqtt_metrics import (
     Zigbee2MQTTMetrics,
     get_zigbee2mqtt_metrics,
@@ -189,7 +190,7 @@ async def cleanup_mqtt_client():
 app = FastAPI(
     title="Ziggy API",
     description="A FastAPI application for Zigbee device management with MQTT integration",
-    version="1.0.0",
+    version=__version__,
     docs_url="/docs",
     openapi_url="/openapi.json",
     lifespan=lifespan,
@@ -214,7 +215,7 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Welcome to Ziggy API",
-        "version": "1.0.0",
+        "version": __version__,
         "status": "running",
     }
 
