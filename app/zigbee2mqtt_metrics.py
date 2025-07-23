@@ -172,6 +172,59 @@ zigbee2mqtt_bridge_info_timestamp = Gauge(
     labelnames=["bridge_name"],
 )
 
+# Configuration for which info fields to include in metrics
+BRIDGE_INFO_INCLUDED_FIELDS = {
+    "version": ["version", "commit"],
+    "coordinator": ["ieee_address", "type"],
+    "config": ["mqtt_server", "mqtt_base_topic", "permit_join", "log_level"],
+}
+
+
+def add_bridge_info_field(category: str, field_name: str):
+    """Add a new field to the bridge info metrics configuration.
+
+    Args:
+        category: The category of the field ('version', 'coordinator', or 'config')
+        field_name: The name of the field to add
+    """
+    if category in BRIDGE_INFO_INCLUDED_FIELDS:
+        if field_name not in BRIDGE_INFO_INCLUDED_FIELDS[category]:
+            BRIDGE_INFO_INCLUDED_FIELDS[category].append(field_name)
+            logger.info(
+                f"Added field '{field_name}' to bridge info {category} metrics"
+            )
+        else:
+            logger.debug(
+                f"Field '{field_name}' already exists in {category} metrics"
+            )
+    else:
+        logger.warning(
+            f"Unknown category '{category}' for bridge info metrics"
+        )
+
+
+def remove_bridge_info_field(category: str, field_name: str):
+    """Remove a field from the bridge info metrics configuration.
+
+    Args:
+        category: The category of the field ('version', 'coordinator', or 'config')
+        field_name: The name of the field to remove
+    """
+    if category in BRIDGE_INFO_INCLUDED_FIELDS:
+        if field_name in BRIDGE_INFO_INCLUDED_FIELDS[category]:
+            BRIDGE_INFO_INCLUDED_FIELDS[category].remove(field_name)
+            logger.info(
+                f"Removed field '{field_name}' from bridge info {category} metrics"
+            )
+        else:
+            logger.debug(
+                f"Field '{field_name}' not found in {category} metrics"
+            )
+    else:
+        logger.warning(
+            f"Unknown category '{category}' for bridge info metrics"
+        )
+
 
 class Zigbee2MQTTMetrics:
     """Class to manage Zigbee2MQTT health-related Prometheus metrics."""
@@ -337,63 +390,49 @@ class Zigbee2MQTTMetrics:
             current_timestamp
         )
 
-        # Update version info
+        # Update version info - only include specified fields
         if "version" in info_data:
-            version_info = {"version": info_data["version"]}
-            if "commit" in info_data:
-                version_info["commit"] = info_data["commit"]
-            zigbee2mqtt_bridge_info_version.labels(**self.labels).info(
-                version_info
-            )
+            version_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["version"]:
+                if field in info_data:
+                    version_info[field] = str(info_data[field])
+            if version_info:
+                zigbee2mqtt_bridge_info_version.labels(**self.labels).info(
+                    version_info
+                )
 
-        # Update coordinator info - flatten nested data
+        # Update coordinator info - only include specified fields
         if "coordinator" in info_data:
             coordinator_data = info_data["coordinator"]
-            # Flatten nested coordinator data for Prometheus compatibility
-            flattened_coordinator = {}
-            for key, value in coordinator_data.items():
-                if isinstance(value, dict):
-                    # Flatten nested dictionaries
-                    for nested_key, nested_value in value.items():
-                        flattened_coordinator[f"{key}_{nested_key}"] = str(
-                            nested_value
-                        )
-                else:
-                    flattened_coordinator[key] = str(value)
-            zigbee2mqtt_bridge_info_coordinator.labels(**self.labels).info(
-                flattened_coordinator
-            )
+            coordinator_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["coordinator"]:
+                if field in coordinator_data:
+                    coordinator_info[field] = str(coordinator_data[field])
+            if coordinator_info:
+                zigbee2mqtt_bridge_info_coordinator.labels(**self.labels).info(
+                    coordinator_info
+                )
 
-        # Update config info - flatten nested data
+        # Update config info - only include specified fields
         if "config" in info_data:
             config_data = info_data["config"]
-            # Flatten nested config data for Prometheus compatibility
-            flattened_config = {}
-            for key, value in config_data.items():
-                if isinstance(value, dict):
-                    # Flatten nested dictionaries
-                    for nested_key, nested_value in value.items():
-                        flattened_config[f"{key}_{nested_key}"] = str(
-                            nested_value
-                        )
-                else:
-                    flattened_config[key] = str(value)
-            zigbee2mqtt_bridge_info_config.labels(**self.labels).info(
-                flattened_config
-            )
+            config_info = {}
+            for field in BRIDGE_INFO_INCLUDED_FIELDS["config"]:
+                if field in config_data:
+                    config_info[field] = str(config_data[field])
+            if config_info:
+                zigbee2mqtt_bridge_info_config.labels(**self.labels).info(
+                    config_info
+                )
 
-        # Update log level and permit join as individual metrics
-        if "log_level" in info_data:
-            # We could add individual gauges for these if needed
-            logger.debug(f"Bridge log level: {info_data['log_level']}")
-
-        if "permit_join" in info_data:
-            # We could add individual gauges for these if needed
-            logger.debug(f"Bridge permit join: {info_data['permit_join']}")
-
+        # Log additional fields for debugging (but don't include in metrics)
         logger.debug(
             f"Updated bridge info metrics - timestamp: {current_timestamp}, info_keys: {list(info_data.keys())}"
         )
+        if "log_level" in info_data:
+            logger.debug(f"Bridge log level: {info_data['log_level']}")
+        if "permit_join" in info_data:
+            logger.debug(f"Bridge permit join: {info_data['permit_join']}")
 
     def set_bridge_info(self, info: Dict[str, Any]):
         """Set bridge information."""

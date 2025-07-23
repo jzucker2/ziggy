@@ -227,17 +227,22 @@ class TestZigbee2MQTTMetrics:
         assert metrics.base_topic == "test-topic"
 
     def test_update_bridge_info(self):
-        """Test updating bridge info metrics."""
+        """Test updating bridge info metrics with limited fields."""
         metrics = Zigbee2MQTTMetrics("test-bridge", "test-topic")
 
-        # Mock info data
+        # Mock info data with limited fields
         info_data = {
             "version": "1.13.0-dev",
             "commit": "772f6c0",
             "coordinator": {"ieee_address": "0x12345678", "type": "zStack30x"},
             "log_level": "debug",
             "permit_join": True,
-            "config": {"mqtt": {"server": "mqtt://localhost:1883"}},
+            "config": {
+                "mqtt_server": "mqtt://localhost:1883",
+                "mqtt_base_topic": "zigbee2mqtt",
+                "permit_join": True,
+                "log_level": "info",
+            },
         }
 
         # Update bridge info
@@ -259,6 +264,56 @@ class TestZigbee2MQTTMetrics:
         # Verify the method handles partial data gracefully
         assert metrics.bridge_name == "test-bridge"
         assert metrics.base_topic == "test-topic"
+
+    def test_add_bridge_info_field(self):
+        """Test adding a field to bridge info metrics."""
+        from app.zigbee2mqtt_metrics import (
+            BRIDGE_INFO_INCLUDED_FIELDS,
+            add_bridge_info_field,
+        )
+
+        # Test adding a new field
+        original_config = BRIDGE_INFO_INCLUDED_FIELDS["version"].copy()
+        add_bridge_info_field("version", "build_date")
+
+        # Verify the field was added
+        assert "build_date" in BRIDGE_INFO_INCLUDED_FIELDS["version"]
+
+        # Test adding an existing field (should not duplicate)
+        add_bridge_info_field("version", "build_date")
+        assert BRIDGE_INFO_INCLUDED_FIELDS["version"].count("build_date") == 1
+
+        # Test adding to unknown category
+        add_bridge_info_field("unknown", "test_field")
+
+        # Restore original configuration
+        BRIDGE_INFO_INCLUDED_FIELDS["version"] = original_config
+
+    def test_remove_bridge_info_field(self):
+        """Test removing a field from bridge info metrics."""
+        from app.zigbee2mqtt_metrics import (
+            BRIDGE_INFO_INCLUDED_FIELDS,
+            remove_bridge_info_field,
+        )
+
+        # Add a field first
+        original_config = BRIDGE_INFO_INCLUDED_FIELDS["version"].copy()
+        BRIDGE_INFO_INCLUDED_FIELDS["version"].append("test_field")
+
+        # Test removing the field
+        remove_bridge_info_field("version", "test_field")
+
+        # Verify the field was removed
+        assert "test_field" not in BRIDGE_INFO_INCLUDED_FIELDS["version"]
+
+        # Test removing non-existent field
+        remove_bridge_info_field("version", "non_existent")
+
+        # Test removing from unknown category
+        remove_bridge_info_field("unknown", "test_field")
+
+        # Restore original configuration
+        BRIDGE_INFO_INCLUDED_FIELDS["version"] = original_config
 
 
 class TestZigbee2MQTTMetricsGlobal:
