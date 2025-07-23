@@ -1,6 +1,10 @@
+import logging
+import time
 from typing import Any, Dict, Optional
 
 from prometheus_client import Counter, Gauge, Info
+
+logger = logging.getLogger(__name__)
 
 # Zigbee2MQTT Bridge Health Metrics
 zigbee2mqtt_bridge_health_timestamp = Gauge(
@@ -127,6 +131,19 @@ zigbee2mqtt_bridge_info = Info(
 zigbee2mqtt_base_topic_info = Info(
     "ziggy_zigbee2mqtt_base_topic",
     "Zigbee2MQTT base topic information",
+    labelnames=["bridge_name"],
+)
+
+# Bridge State Metrics
+zigbee2mqtt_bridge_state = Info(
+    "ziggy_zigbee2mqtt_bridge_state",
+    "Zigbee2MQTT bridge state information",
+    labelnames=["bridge_name"],
+)
+
+zigbee2mqtt_bridge_state_timestamp = Gauge(
+    "ziggy_zigbee2mqtt_bridge_state_timestamp",
+    "Last bridge state update timestamp",
     labelnames=["bridge_name"],
 )
 
@@ -267,6 +284,27 @@ class Zigbee2MQTTMetrics:
                         zigbee2mqtt_device_appearances.labels(
                             **device_labels
                         ).inc()
+
+    def update_bridge_state(self, state_data: Dict[str, Any]):
+        """Update bridge state metrics from Zigbee2MQTT state data."""
+        # Update timestamp
+        current_timestamp = time.time()
+        zigbee2mqtt_bridge_state_timestamp.labels(**self.labels).set(
+            current_timestamp
+        )
+
+        # Update bridge state info
+        # Filter out label keys from state_data to avoid conflicts
+        state_info_without_labels = {
+            k: v for k, v in state_data.items() if k not in self.labels
+        }
+        zigbee2mqtt_bridge_state.labels(**self.labels).info(
+            state_info_without_labels
+        )
+
+        logger.debug(
+            f"Updated bridge state metrics - timestamp: {current_timestamp}, state_keys: {list(state_data.keys())}"
+        )
 
     def set_bridge_info(self, info: Dict[str, Any]):
         """Set bridge information."""

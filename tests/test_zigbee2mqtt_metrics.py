@@ -185,6 +185,53 @@ class TestZigbee2MQTTMetrics:
         # Should not raise any exceptions
         metrics.reset_device_metrics("0x00158d0001234567")
 
+    def test_update_bridge_state(self):
+        """Test updating bridge state metrics."""
+        metrics = Zigbee2MQTTMetrics("test-bridge", "test-topic")
+
+        # Mock state data
+        state_data = {
+            "version": "1.13.0-dev",
+            "commit": "772f6c0",
+            "coordinator": {"ieee_address": "0x12345678", "type": "zStack30x"},
+            "network": {"channel": 15, "pan_id": 5674},
+            "log_level": "debug",
+            "permit_join": True,
+        }
+
+        # Update bridge state
+        metrics.update_bridge_state(state_data)
+
+        # Verify the metrics were updated (we can't easily test Info metrics directly)
+        # but we can verify the method doesn't raise exceptions
+        assert metrics.bridge_name == "test-bridge"
+        assert metrics.base_topic == "test-topic"
+
+    def test_update_bridge_state_empty_data(self):
+        """Test updating bridge state metrics with empty data."""
+        metrics = Zigbee2MQTTMetrics("test-bridge", "test-topic")
+
+        # Update with empty state data
+        state_data = {}
+        metrics.update_bridge_state(state_data)
+
+        # Verify the method handles empty data gracefully
+        assert metrics.bridge_name == "test-bridge"
+        assert metrics.base_topic == "test-topic"
+
+    def test_update_bridge_state_partial_data(self):
+        """Test updating bridge state metrics with partial data."""
+        metrics = Zigbee2MQTTMetrics("test-bridge", "test-topic")
+
+        # Update with partial state data
+        state_data = {"version": "1.13.0-dev", "permit_join": False}
+
+        metrics.update_bridge_state(state_data)
+
+        # Verify the method handles partial data gracefully
+        assert metrics.bridge_name == "test-bridge"
+        assert metrics.base_topic == "test-topic"
+
 
 class TestZigbee2MQTTMetricsGlobal:
     """Test cases for global Zigbee2MQTT metrics functions."""

@@ -1,6 +1,6 @@
 import json
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from app.mqtt_client import ZiggyMQTTClient
 
@@ -19,6 +19,7 @@ class TestZiggyMQTTClient:
             assert (
                 client.zigbee2mqtt_health_topic == "zigbee2mqtt/bridge/health"
             )
+            assert client.zigbee2mqtt_state_topic == "zigbee2mqtt/bridge/state"
 
     def test_mqtt_client_with_environment_variables(self):
         """Test MQTT client initialization with environment variables."""
@@ -42,6 +43,7 @@ class TestZiggyMQTTClient:
             assert client.client_id == "test-client"
             assert client.zigbee2mqtt_base_topic == "test"
             assert client.zigbee2mqtt_health_topic == "test/bridge/health"
+            assert client.zigbee2mqtt_state_topic == "test/bridge/state"
 
     def test_mqtt_client_default_bridge_name(self):
         """Test that default bridge name is used when ZIGBEE2MQTT_BRIDGE_NAME is not set."""
@@ -79,15 +81,60 @@ class TestZiggyMQTTClient:
         assert hasattr(client, "_handle_zigbee2mqtt_health")
 
     def test_mqtt_client_handle_zigbee2mqtt_health(self):
-        """Test Zigbee2MQTT health message handling."""
-        client = ZiggyMQTTClient()
+        """Test handling of Zigbee2MQTT health messages."""
+        with patch.dict(os.environ, {}, clear=True):
+            client = ZiggyMQTTClient()
 
-        # Test with valid JSON
-        health_data = {"response_time": 1640995200000}
-        payload = json.dumps(health_data).encode("utf-8")
+            # Mock the metrics
+            mock_metrics = Mock()
+            client.zigbee2mqtt_metrics = mock_metrics
 
-        # Should not raise any exceptions
-        client._handle_zigbee2mqtt_health(payload)
+            # Mock payload
+            payload = json.dumps(
+                {
+                    "response_time": 1234567890,
+                    "os": {"load_average": [1.0, 1.0, 1.0]},
+                    "process": {"uptime_sec": 3600},
+                    "mqtt": {"connected": True},
+                    "devices": {"0x1234567890abcdef": {"messages": 100}},
+                }
+            ).encode("utf-8")
+
+            # Call the handler
+            client._handle_zigbee2mqtt_health(payload)
+
+            # Verify the metrics were updated
+            mock_metrics.update_bridge_health.assert_called_once()
+
+    def test_mqtt_client_handle_zigbee2mqtt_state(self):
+        """Test handling of Zigbee2MQTT bridge state messages."""
+        with patch.dict(os.environ, {}, clear=True):
+            client = ZiggyMQTTClient()
+
+            # Mock the metrics
+            mock_metrics = Mock()
+            client.zigbee2mqtt_metrics = mock_metrics
+
+            # Mock payload
+            payload = json.dumps(
+                {
+                    "version": "1.13.0-dev",
+                    "commit": "772f6c0",
+                    "coordinator": {
+                        "ieee_address": "0x12345678",
+                        "type": "zStack30x",
+                    },
+                    "network": {"channel": 15, "pan_id": 5674},
+                    "log_level": "debug",
+                    "permit_join": True,
+                }
+            ).encode("utf-8")
+
+            # Call the handler
+            client._handle_zigbee2mqtt_state(payload)
+
+            # Verify the metrics were updated
+            mock_metrics.update_bridge_state.assert_called_once()
 
     def test_mqtt_client_handle_general_message(self):
         """Test general message handling."""

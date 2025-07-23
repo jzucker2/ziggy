@@ -106,7 +106,7 @@ class TestMQTTInitializationBug:
         # Verify metrics were updated
         mock_client.metrics.set_connection_status.assert_called_with(True)
         mock_client.metrics.set_client_info.assert_called()
-        mock_client.metrics.set_subscriptions_active.assert_called_with(1)
+        mock_client.metrics.set_subscriptions_active.assert_called_with(2)
 
         # Verify the topic was added to subscribed_topics
         assert "test/bridge/health" in mock_client.subscribed_topics
