@@ -6,6 +6,8 @@ from typing import Any, Dict
 
 from prometheus_client import Info
 
+from app.version import __app_description__, __app_name__, __version__
+
 logger = logging.getLogger(__name__)
 
 # Application Info Metric
@@ -16,9 +18,9 @@ ziggy_app_info = Info(
 )
 
 # Application version and metadata
-APP_VERSION = "1.0.0"
-APP_NAME = "Ziggy"
-APP_DESCRIPTION = "Zigbee2MQTT Prometheus Metrics Exporter"
+APP_VERSION = __version__
+APP_NAME = __app_name__
+APP_DESCRIPTION = __app_description__
 
 
 def get_app_info() -> Dict[str, Any]:

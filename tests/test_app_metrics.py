@@ -3,13 +3,8 @@ import platform
 import sys
 from unittest.mock import patch
 
-from app.app_metrics import (
-    APP_DESCRIPTION,
-    APP_NAME,
-    APP_VERSION,
-    get_app_info,
-    update_app_info,
-)
+from app.app_metrics import get_app_info, update_app_info
+from app.version import __app_description__, __app_name__, __version__
 
 
 class TestAppMetrics:
@@ -17,9 +12,9 @@ class TestAppMetrics:
 
     def test_app_constants(self):
         """Test that app constants are defined correctly."""
-        assert APP_VERSION == "1.0.0"
-        assert APP_NAME == "Ziggy"
-        assert APP_DESCRIPTION == "Zigbee2MQTT Prometheus Metrics Exporter"
+        assert __version__ == "1.0.0"
+        assert __app_name__ == "Ziggy"
+        assert __app_description__ == "Zigbee2MQTT Prometheus Metrics Exporter"
 
     def test_get_app_info(self):
         """Test getting application information."""
@@ -35,9 +30,9 @@ class TestAppMetrics:
         assert "environment" in app_info
 
         # Check values
-        assert app_info["version"] == APP_VERSION
-        assert app_info["name"] == APP_NAME
-        assert app_info["description"] == APP_DESCRIPTION
+        assert app_info["version"] == __version__
+        assert app_info["name"] == __app_name__
+        assert app_info["description"] == __app_description__
         assert app_info["python_version"] == sys.version
         assert (
             app_info["python_implementation"]
