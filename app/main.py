@@ -62,9 +62,10 @@ async def lifespan(app: FastAPI):
 
     # Set application info metrics
     app_info = get_app_info()
-    update_app_info(app_info)
+    bridge_name = os.getenv("ZIGBEE2MQTT_BRIDGE_NAME", "navi")
+    update_app_info(app_info, bridge_name)
     logger.info(
-        f"📊 Set application info metrics - version: {app_info['version']}"
+        f"📊 Set application info metrics - version: {app_info['version']}, bridge_name: {bridge_name}"
     )
 
     logger.info("✅ Ziggy application started successfully")

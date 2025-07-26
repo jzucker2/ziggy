@@ -92,6 +92,82 @@ LOG_FORMAT=detailed  # simple, detailed, json
 LOG_HANDLERS=console,file  # console, file, or both
 ```
 
+#### Gunicorn Configuration
+
+The application uses Gunicorn with Uvicorn workers for production deployment. All Gunicorn settings are configurable via environment variables:
+
+```bash
+# Worker Configuration
+GUNICORN_WORKERS=4                    # Number of worker processes (default: CPU cores * 2 + 1)
+GUNICORN_WORKER_CLASS=uvicorn.workers.UvicornWorker  # Worker class
+GUNICORN_WORKER_CONNECTIONS=1000      # Max concurrent connections per worker
+GUNICORN_MAX_REQUESTS=1000           # Max requests before worker restart
+GUNICORN_MAX_REQUESTS_JITTER=50      # Jitter for max requests
+
+# Server Configuration
+GUNICORN_BIND=0.0.0.0:8000          # Server socket binding
+GUNICORN_BACKLOG=2048                # Connection backlog
+
+# Timeout Settings
+GUNICORN_TIMEOUT=30                  # Worker timeout in seconds
+GUNICORN_KEEPALIVE=2                 # Keep-alive connection timeout
+GUNICORN_GRACEFUL_TIMEOUT=30         # Graceful shutdown timeout
+
+# Logging
+GUNICORN_LOG_LEVEL=info              # Log level (debug, info, warning, error, critical)
+GUNICORN_ACCESS_LOG=-                # Access log file (- for stdout, empty for disabled)
+GUNICORN_ERROR_LOG=-                 # Error log file (- for stderr)
+GUNICORN_ACCESS_LOG_FORMAT='%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
+
+# Process Management
+GUNICORN_PROC_NAME=ziggy             # Process name
+GUNICORN_DAEMON=false                # Run as daemon
+GUNICORN_PIDFILE=                    # PID file location
+GUNICORN_USER=                       # User to run as
+GUNICORN_GROUP=                      # Group to run as
+
+# Security
+GUNICORN_LIMIT_REQUEST_LINE=4094     # Max request line size
+GUNICORN_LIMIT_REQUEST_FIELDS=100    # Max request header fields
+GUNICORN_LIMIT_REQUEST_FIELD_SIZE=8190  # Max request header field size
+
+# Performance
+GUNICORN_PRELOAD_APP=true            # Preload application for better performance
+```
+
+**Example Docker Compose with Gunicorn configuration:**
+
+```yaml
+version: '3.8'
+services:
+  ziggy:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # MQTT Configuration
+      - MQTT_ENABLED=true
+      - MQTT_BROKER_HOST=mqtt-broker
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USERNAME=your_username
+      - MQTT_PASSWORD=your_password
+
+      # Gunicorn Configuration
+      - GUNICORN_WORKERS=4
+      - GUNICORN_TIMEOUT=30
+      - GUNICORN_LOG_LEVEL=info
+      - GUNICORN_ACCESS_LOG=-
+      - GUNICORN_MAX_REQUESTS=1000
+      - GUNICORN_MAX_REQUESTS_JITTER=50
+
+      # Logging Configuration
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=detailed
+      - LOG_HANDLERS=console
+    depends_on:
+      - mqtt-broker
+```
+
 ### Zigbee2MQTT Setup
 
 To enable Zigbee2MQTT health monitoring, ensure your Zigbee2MQTT configuration includes:

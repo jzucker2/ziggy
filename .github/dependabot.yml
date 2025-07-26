@@ -46,3 +46,4 @@ updates:
       - dependency-name: "uvicorn*"
       - dependency-name: "fastapi-mqtt"
       - dependency-name: "paho-mqtt"
+      - dependency-name: "gunicorn"

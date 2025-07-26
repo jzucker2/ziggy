@@ -15,6 +15,9 @@ COPY . .
 # Create logs directory
 RUN mkdir -p logs
 
+# Copy Gunicorn configuration
+COPY gunicorn.conf.py .
+
 # Make startup script executable
 RUN chmod +x /app/start.sh
 

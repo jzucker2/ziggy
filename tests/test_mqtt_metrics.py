@@ -20,9 +20,11 @@ class TestMQTTMetrics:
         assert metrics.broker_host == "test-broker.com"
         assert metrics.broker_port == 1883
         assert metrics.client_id == "test-client"
+        assert metrics.bridge_name == "default"
         assert metrics.labels == {
             "broker_host": "test-broker.com",
             "broker_port": "1883",
+            "bridge_name": "default",
         }
 
     def test_set_connection_status(self):
@@ -192,6 +194,7 @@ class TestMQTTMetricsIntegration:
         expected_labels = {
             "broker_host": "test-broker.com",
             "broker_port": "1883",
+            "bridge_name": "default",
         }
 
         assert metrics.labels == expected_labels
@@ -203,6 +206,7 @@ class TestMQTTMetricsIntegration:
         # The metrics should use consistent labeling across all operations
         assert "broker_host" in metrics.labels
         assert "broker_port" in metrics.labels
+        assert "bridge_name" in metrics.labels
 
 
 class TestMQTTMetricsPrometheus:
@@ -228,11 +232,14 @@ class TestMQTTMetricsPrometheus:
         # Test connection status metric labels
         assert "broker_host" in mqtt_connection_status._labelnames
         assert "broker_port" in mqtt_connection_status._labelnames
+        assert "bridge_name" in mqtt_connection_status._labelnames
 
         # Test messages received metric labels
         assert "topic" in mqtt_messages_received._labelnames
         assert "broker_host" in mqtt_messages_received._labelnames
+        assert "bridge_name" in mqtt_messages_received._labelnames
 
         # Test messages published metric labels
         assert "topic" in mqtt_messages_published._labelnames
         assert "broker_host" in mqtt_messages_published._labelnames
+        assert "bridge_name" in mqtt_messages_published._labelnames

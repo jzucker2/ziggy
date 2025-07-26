@@ -1,5 +1,6 @@
 fastapi>=0.110.0
 uvicorn>=0.27.0
+gunicorn>=21.2.0
 prometheus-fastapi-instrumentator>=6.1.0
 httpx>=0.27.0
 fastapi-mqtt>=2.2.0
