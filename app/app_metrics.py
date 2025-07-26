@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 ziggy_app_info = Info(
     "ziggy_app_info",
     "Ziggy application information",
-    labelnames=["app_name"],
+    labelnames=["app_name", "bridge_name"],
 )
 
 # Application version and metadata
@@ -45,7 +45,7 @@ def get_app_info() -> Dict[str, Any]:
     }
 
 
-def update_app_info(app_info: Dict[str, Any]):
+def update_app_info(app_info: Dict[str, Any], bridge_name: str = "default"):
     """Update application information metrics."""
     # Flatten nested data for Prometheus compatibility
     flattened_info = {}
@@ -58,8 +58,10 @@ def update_app_info(app_info: Dict[str, Any]):
             flattened_info[key] = str(value)
 
     # Update the application info metric
-    ziggy_app_info.labels(app_name="ziggy").info(flattened_info)
+    ziggy_app_info.labels(app_name="ziggy", bridge_name=bridge_name).info(
+        flattened_info
+    )
 
     logger.debug(
-        f"Updated application info metrics - keys: {list(app_info.keys())}"
+        f"Updated application info metrics - keys: {list(app_info.keys())}, bridge_name: {bridge_name}"
     )

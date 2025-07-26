@@ -39,14 +39,16 @@ class ZiggyMQTTClient:
             f"{self.zigbee2mqtt_base_topic}/bridge/info"
         )
 
+        # Initialize Zigbee2MQTT metrics
+        bridge_name = os.getenv("ZIGBEE2MQTT_BRIDGE_NAME", "default")
+
         # Initialize metrics
         self.metrics = MQTTMetrics(
-            self.broker_host, self.broker_port, self.client_id
+            self.broker_host, self.broker_port, self.client_id, bridge_name
         )
         set_mqtt_metrics(self.metrics)
 
         # Initialize Zigbee2MQTT metrics
-        bridge_name = os.getenv("ZIGBEE2MQTT_BRIDGE_NAME", "default")
         self.zigbee2mqtt_metrics = Zigbee2MQTTMetrics(
             bridge_name, self.zigbee2mqtt_base_topic
         )
