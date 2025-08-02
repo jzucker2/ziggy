@@ -426,7 +426,7 @@ Add to your `prometheus.yml`:
 
 ```yaml
 scrape_configs:
-  - job_name: 'ziggy-api'
+  - job_name: 'ziggy'
     static_configs:
       - targets: ['localhost:8000']
     metrics_path: '/metrics'
