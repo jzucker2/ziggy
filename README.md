@@ -1,5 +1,10 @@
 # Ziggy API
 
+[![GitHub release](https://img.shields.io/github/release/jzucker2/ziggy.svg)](https://GitHub.com/jzucker2/ziggy/releases/)
+[![Build](https://github.com/jzucker2/ziggy/actions/workflows/docker.yml/badge.svg?branch=master)](https://github.com/jzucker2/ziggy/actions/workflows/docker.yml)
+[![Tests](https://github.com/jzucker2/ziggy/actions/workflows/python_unittests.yml/badge.svg)](https://github.com/jzucker2/ziggy/actions/workflows/python_unittests.yml)
+[![flake8 Lint](https://github.com/jzucker2/ziggy/actions/workflows/python_lint.yml/badge.svg)](https://github.com/jzucker2/ziggy/actions/workflows/python_lint.yml)
+
 A FastAPI application for Zigbee device management with MQTT integration and comprehensive Prometheus metrics.
 
 ## Features
