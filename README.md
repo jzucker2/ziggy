@@ -7,6 +7,12 @@
 
 A FastAPI application for Zigbee device management with MQTT integration and comprehensive Prometheus metrics.
 
+Want a [grafana](https://grafana.com/oss/grafana/) dashboard like this?
+
+![Basic Dashboard Quick Look](./images/basic_dashboard.png)
+
+![Select Bridges](./images/select_bridges.png)
+
 ## Features
 
 - **FastAPI REST API** with health checks and metrics endpoints
