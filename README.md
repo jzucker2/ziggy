@@ -1,6 +1,17 @@
 # Ziggy API
 
+[![GitHub release](https://img.shields.io/github/release/jzucker2/ziggy.svg)](https://GitHub.com/jzucker2/ziggy/releases/)
+[![Build](https://github.com/jzucker2/ziggy/actions/workflows/docker.yml/badge.svg?branch=master)](https://github.com/jzucker2/ziggy/actions/workflows/docker.yml)
+[![Tests](https://github.com/jzucker2/ziggy/actions/workflows/python_unittests.yml/badge.svg)](https://github.com/jzucker2/ziggy/actions/workflows/python_unittests.yml)
+[![flake8 Lint](https://github.com/jzucker2/ziggy/actions/workflows/python_lint.yml/badge.svg)](https://github.com/jzucker2/ziggy/actions/workflows/python_lint.yml)
+
 A FastAPI application for Zigbee device management with MQTT integration and comprehensive Prometheus metrics.
+
+Want a [grafana](https://grafana.com/oss/grafana/) dashboard like this?
+
+![Basic Dashboard Quick Look](./images/basic_dashboard.png)
+
+![Select Bridges](./images/select_bridges.png)
 
 ## Features
 
@@ -415,7 +426,7 @@ Add to your `prometheus.yml`:
 
 ```yaml
 scrape_configs:
-  - job_name: 'ziggy-api'
+  - job_name: 'ziggy'
     static_configs:
       - targets: ['localhost:8000']
     metrics_path: '/metrics'
