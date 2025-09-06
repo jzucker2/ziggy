@@ -5,7 +5,7 @@
 [![Tests](https://github.com/jzucker2/ziggy/actions/workflows/python_unittests.yml/badge.svg)](https://github.com/jzucker2/ziggy/actions/workflows/python_unittests.yml)
 [![flake8 Lint](https://github.com/jzucker2/ziggy/actions/workflows/python_lint.yml/badge.svg)](https://github.com/jzucker2/ziggy/actions/workflows/python_lint.yml)
 
-![Ziggy Logo](./images/ziggy_logo.png)
+![Ziggy Logo](./images/ziggy_logo_small.png)
 
 A FastAPI app for Zigbee device management with MQTT integration and comprehensive Prometheus metrics.
 
