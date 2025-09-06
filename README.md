@@ -5,7 +5,9 @@
 [![Tests](https://github.com/jzucker2/ziggy/actions/workflows/python_unittests.yml/badge.svg)](https://github.com/jzucker2/ziggy/actions/workflows/python_unittests.yml)
 [![flake8 Lint](https://github.com/jzucker2/ziggy/actions/workflows/python_lint.yml/badge.svg)](https://github.com/jzucker2/ziggy/actions/workflows/python_lint.yml)
 
-A FastAPI application for Zigbee device management with MQTT integration and comprehensive Prometheus metrics.
+![Ziggy Logo](./images/zigg_logo.png)
+
+A FastAPI app for Zigbee device management with MQTT integration and comprehensive Prometheus metrics.
 
 Want a [grafana](https://grafana.com/oss/grafana/) dashboard like this?
 
